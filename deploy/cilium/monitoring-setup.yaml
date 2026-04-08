@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cilium-monitoring-config
+  namespace: kube-system
+data:
+  enable-hubble: "true"
+  hubble-listen-address: ":4244"
+  hubble-disable-tls: "false"
+  hubble-event-buffer-capacity: "4096"
+  hubble-event-queue-size: "1024"
