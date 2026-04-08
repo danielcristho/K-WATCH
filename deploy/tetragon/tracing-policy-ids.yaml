@@ -1,0 +1,48 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+  name: ids-syscall-monitoring
+spec:
+  kprobes:
+    - call: "sys_execve"
+      syscall: true
+      args:
+        - index: 0
+          type: "string" # path
+        - index: 1
+          type: "string_array" # argv
+      selectors:
+        - matchActions:
+            - action: Post
+    - call: "sys_openat"
+      syscall: true
+      args:
+        - index: 1
+          type: "string" # filename
+        - index: 2
+          type: "int" # flags
+      selectors:
+        - matchActions:
+            - action: Post
+    - call: "sys_socket"
+      syscall: true
+      args:
+        - index: 0
+          type: "int" # domain
+        - index: 1
+          type: "int" # type
+        - index: 2
+          type: "int" # protocol
+      selectors:
+        - matchActions:
+            - action: Post
+    - call: "sys_connect"
+      syscall: true
+      args:
+        - index: 0
+          type: "int" # fd
+        - index: 1
+          type: "sockaddr" # addr
+      selectors:
+        - matchActions:
+            - action: Post
