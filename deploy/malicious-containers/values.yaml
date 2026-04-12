@@ -1,0 +1,19 @@
+mirai:
+  enabled: true
+  image: mitjclinic/mirai:v0.0.1-alpha
+  interval: 60
+  commandOverride: false
+
+kinsing:
+  enabled: true
+  image: alpine:latest
+  commandOverride: true
+  
+teamtnt:
+  enabled: true
+  image: timonmat/xmr-stak-cpu
+  commandOverride: false
+  simulateHostMount: false
+
+nodeSelector:
+  kubernetes.io/hostname: k3s-worker1 # Default to a worker node

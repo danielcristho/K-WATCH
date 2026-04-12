@@ -1,0 +1,34 @@
+---
+- name: Install kubectl
+  ansible.builtin.shell: |
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x kubectl
+    sudo mv kubectl /usr/local/bin
+
+- name: Copy master token
+  ansible.builtin.copy:
+    src: ./token
+    dest: /tmp/token
+    mode: "0644"
+
+- name: Create kubeconfig directory
+  ansible.builtin.file:
+    path: /home/agent007/.kube
+    state: directory
+    mode: "0755"
+    owner: agent007
+    group: agent007
+
+- name: Copy kubeconfig file
+  ansible.builtin.copy:
+    src: ./kubeconfig
+    dest: /home/agent007/.kube/config
+    mode: "0600"
+    owner: agent007
+    group: agent007
+
+- name: Install k3s agent on worker
+  ansible.builtin.shell: |
+    TOKEN=$(cat /tmp/token)
+    curl -sfL https://get.k3s.io | K3S_TOKEN=$TOKEN sh -s - agent --server https://{{ MASTER_IP }}:6443
+    export KUBECONFIG=/home/ray/.kube.config

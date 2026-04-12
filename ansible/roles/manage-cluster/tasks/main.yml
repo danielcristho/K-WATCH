@@ -1,0 +1,16 @@
+---
+- name: Install kubernetes library for Python
+  ansible.builtin.pip:
+    name: kubernetes
+
+- name: Config Git global safe directory
+  ansible.builtin.command: git config --global --add safe.directory /home/ray/ray-jupyterlab-k3
+  args:
+    creates: /home/ray/.gitconfig
+  become: true
+
+- name: Install calico network plugin
+  kubernetes.core.k8s:
+    kubeconfig: /home/ray/.kube/config
+    src: /home/ray/k3s-ray-jupyterlab/infra/kubernetes/base/manifests/networks/calico.yaml
+    state: present

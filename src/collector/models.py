@@ -38,7 +38,15 @@ class CiliumFlowEvent(BaseModel):
     node_name: str
     time: datetime
 
+class FalcoEvent(BaseModel):
+    output: str
+    priority: str
+    rule: str
+    time: datetime
+    output_fields: Dict[str, Any]
+
 class CombinedEvent(BaseModel):
     tetragon: Optional[TetragonEvent] = None
     cilium: Optional[CiliumFlowEvent] = None
+    falco: Optional[FalcoEvent] = None
 

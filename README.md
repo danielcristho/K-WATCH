@@ -10,3 +10,19 @@ K-IDS is a hybrid runtime detection system for Kubernetes that utilizes eBPF-bas
 
 ## Getting Started
 See [Implementation Plan](implementation_plan.md) for architecture details.
+
+```sh
+Malicious/Benign Container
+        ↓
+Tetragon (syscall) + Cilium (L3/L4)
+        ↓
+Raw logs (JSON)
+        ↓
+Preprocessing & Labeling
+        ↓
+Dataset (CSV/Parquet)
+        ↓
+Train Decision Tree
+        ↓
+Alert → Grafana/Loki (SIEM)
+```

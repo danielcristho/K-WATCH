@@ -1,0 +1,20 @@
+---
+- name: Setup Master
+  hosts: k3s-master
+  become: true
+  remote_user: agent007
+  roles:
+    - config
+    # - docker
+    - master
+    - manage-cluster
+
+- name: Setup Worker
+  hosts:
+    - k3s-worker1
+    - k3s-worker2
+  become: true
+  remote_user: agent007
+  roles:
+    - config
+    - worker

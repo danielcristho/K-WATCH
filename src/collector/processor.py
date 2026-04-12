@@ -1,12 +1,18 @@
 import pandas as pd
 from collections import defaultdict
 from typing import List, Dict, Any, Optional
-from .models import TetragonEvent, CiliumFlowEvent
+from .models import TetragonEvent, CiliumFlowEvent, FalcoEvent
 
 class HybridFeatureProcessor:
     def __init__(self, window_seconds: int = 10):
         self.window_seconds = window_seconds
-        self.event_buckets = defaultdict(lambda: {"syscalls": [], "network": []})
+        self.event_buckets = defaultdict(lambda: {"syscalls": [], "network": [], "falco": []})
+        self.feature_columns = [
+            "syscall_count", "execve_count", "open_count", 
+            "socket_count", "connect_count", "unique_binaries_count",
+            "flow_count", "unique_destinations_count", 
+            "tcp_count", "udp_count", "total_bytes", "falco_alert_count"
+        ]
 
     def process_tetragon_event(self, event: TetragonEvent):
         container_id = self._get_container_id(event)
@@ -20,6 +26,12 @@ class HybridFeatureProcessor:
         container_key = f"{namespace}/{pod_name}"
 
         self.event_buckets[container_key]["network"].append(event)
+
+    def process_falco_event(self, event: FalcoEvent):
+        pod_name = event.output_fields.get("k8s.pod.name", "unknown")
+        namespace = event.output_fields.get("k8s.ns.name", "default")
+        container_key = f"{namespace}/{pod_name}"
+        self.event_buckets[container_key]["falco"].append(event)
 
     def _get_container_id(self, event: TetragonEvent) -> str:
         if event.process_kprobe and event.process_kprobe.process.pod:
@@ -87,7 +99,11 @@ class HybridFeatureProcessor:
 
         features["unique_destinations_count"] = len(destinations)
 
+        # Falco aggregation
+        features["falco_alert_count"] = len(bucket["falco"])
+        features["max_priority"] = max([f.priority for f in bucket["falco"]]) if bucket["falco"] else "None"
+
         # Reset bucket
-        self.event_buckets[container_key] = {"syscalls": [], "network": []}
+        self.event_buckets[container_key] = {"syscalls": [], "network": [], "falco": []}
 
         return features

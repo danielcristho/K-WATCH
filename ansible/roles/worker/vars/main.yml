@@ -1,0 +1,2 @@
+MASTER_IP: "192.168.122.10"
+TOKEN_PATH: "{{ playbook_dir }}/token"
