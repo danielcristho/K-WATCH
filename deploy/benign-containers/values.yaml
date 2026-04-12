@@ -1,0 +1,13 @@
+mariadb:
+  enabled: true
+  image: mariadb:10.6
+  env:
+    MARIADB_ROOT_PASSWORD: secretpassword
+
+cloudsuite:
+  enabled: true
+  # Using a representative image for CloudSuite
+  image: nginx:latest 
+
+nodeSelector:
+  kubernetes.io/hostname: k3s-worker1

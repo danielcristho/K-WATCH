@@ -1,0 +1,76 @@
+{{- if .Values.loki.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: loki
+          image: {{ .Values.loki.image }}
+          args: ["-config.file=/etc/loki/local-config.yaml"]
+          ports:
+            - containerPort: 3100
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+spec:
+  ports:
+    - port: 3100
+      targetPort: 3100
+  selector:
+    app: loki
+{{- end }}
+---
+{{- if .Values.grafana.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: grafana
+          image: {{ .Values.grafana.image }}
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  type: {{ .Values.grafana.serviceType }}
+  ports:
+    - port: 80
+      targetPort: 3000
+      nodePort: 32000
+  selector:
+    app: grafana
+{{- end }}

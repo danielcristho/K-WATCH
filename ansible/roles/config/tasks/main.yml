@@ -1,0 +1,31 @@
+---
+- name: Run update
+  ansible.builtin.apt:
+    name: aptitude
+    state: latest
+    update_cache: true
+
+- name: Install some packages
+  ansible.builtin.apt:
+    name:
+      - net-tools
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - virtualenv
+      - python3-setuptools
+      - gnupg-agent
+      - autoconf
+      - dpkg-dev
+      - file
+      - g++
+      - gcc
+      - libc-dev
+      - make
+      - pkg-config
+      - re2c
+      - wget
+    state: present
+    update_cache: true

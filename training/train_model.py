@@ -13,7 +13,7 @@ def load_and_preprocess(csv_files):
         try:
             dfs.append(pd.read_csv(f))
         except Exception as e:
-            print(f"⚠️ Failed to read {f}: {e}")
+            print(f"Failed to read {f}: {e}")
             
     if not dfs:
         raise ValueError("No valid CSV data provided for training.")

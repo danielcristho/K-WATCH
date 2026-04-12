@@ -1,0 +1,44 @@
+{{- if .Values.mirai.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-mirai
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mirai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mirai
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mirai
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mirai
+          image: {{ .Values.mirai.image }}
+          {{- if .Values.mirai.commandOverride }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Mirai simulation..."
+              apk add --no-cache iputils nmap
+              while true; do
+                echo "Scanning for vulnerable devices (simulation)..."
+                # Simulate scanning local network
+                nmap -sn 10.0.0.0/24
+                # Simulate connection attempts
+                nc -zv 8.8.8.8 23 || true
+                nc -zv 8.8.8.8 22 || true
+                sleep {{ .Values.mirai.interval }};
+              done
+          {{- end }}
+{{- end }}

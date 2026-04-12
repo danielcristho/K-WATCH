@@ -1,0 +1,66 @@
+{{- if .Values.mariadb.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "benign-containers.fullname" . }}-mariadb
+  labels:
+    {{- include "benign-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mariadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "benign-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mariadb
+  template:
+    metadata:
+      labels:
+        {{- include "benign-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mariadb
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mariadb
+          image: {{ .Values.mariadb.image }}
+          env:
+            {{- range $key, $value := .Values.mariadb.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - containerPort: 3306
+{{- end }}
+---
+{{- if .Values.cloudsuite.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "benign-containers.fullname" . }}-cloudsuite
+  labels:
+    {{- include "benign-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cloudsuite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "benign-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cloudsuite
+  template:
+    metadata:
+      labels:
+        {{- include "benign-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cloudsuite
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: cloudsuite
+          image: {{ .Values.cloudsuite.image }}
+          ports:
+            - containerPort: 80
+{{- end }}
