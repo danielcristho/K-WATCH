@@ -8,9 +8,9 @@ spec:
       syscall: true
       args:
         - index: 0
-          type: "string" # path
+          type: "path" # path
         - index: 1
-          type: "string_array" # argv
+          type: "string" # argv
       selectors:
         - matchActions:
             - action: Post
