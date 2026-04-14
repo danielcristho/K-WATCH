@@ -1,0 +1,6 @@
+# Ansible
+hosts
+
+# K8s
+token
+kubeconfig

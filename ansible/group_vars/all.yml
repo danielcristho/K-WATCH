@@ -1,0 +1,5 @@
+---
+ansible_user: agent007
+master_ip: "{{ groups['master'][0] }}"
+k3s_token_file: "/var/lib/rancher/k3s/server/node-token"
+kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"

@@ -1,9 +1,16 @@
 ---
+- name: Check if kubectl is installed
+  ansible.builtin.command: kubectl version --client
+  register: kubectl_check
+  ignore_errors: true
+  changed_when: false
+
 - name: Install kubectl
   ansible.builtin.shell: |
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin
+  when: kubectl_check.rc != 0
 
 - name: Copy master token
   ansible.builtin.copy:
@@ -13,22 +20,27 @@
 
 - name: Create kubeconfig directory
   ansible.builtin.file:
-    path: /home/agent007/.kube
+    path: "/home/{{ ansible_user }}/.kube"
     state: directory
     mode: "0755"
-    owner: agent007
-    group: agent007
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
 
 - name: Copy kubeconfig file
   ansible.builtin.copy:
     src: ./kubeconfig
-    dest: /home/agent007/.kube/config
+    dest: "{{ kubeconfig_path }}"
     mode: "0600"
-    owner: agent007
-    group: agent007
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Check if k3s is installed
+  ansible.builtin.command: k3s --version
+  register: k3s_check
+  ignore_errors: true
+  changed_when: false
 
 - name: Install k3s agent on worker
   ansible.builtin.shell: |
     TOKEN=$(cat /tmp/token)
-    curl -sfL https://get.k3s.io | K3S_TOKEN=$TOKEN sh -s - agent --server https://{{ MASTER_IP }}:6443
-    export KUBECONFIG=/home/ray/.kube.config
+    curl -sfL https://get.k3s.io | K3S_TOKEN=$TOKEN INSTALL_K3S_EXEC="agent --server https://{{ master_ip }}:6443 --node-ip={{ ansible_host }} --disable-kube-proxy" sh -

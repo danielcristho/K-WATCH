@@ -1,18 +1,20 @@
 ---
+- name: Gather facts for all hosts
+  hosts: all
+  gather_facts: true
+
 - name: Setup Master
-  hosts: k3s-master
+  hosts: master
   become: true
-  remote_user: agent007
   roles:
     - config
-    # - docker
     - master
     - manage-cluster
+    - tetragon
 
 - name: Setup Worker
   hosts:
-    - k3s-worker1
-    - k3s-worker2
+    - worker
   become: true
   remote_user: agent007
   roles:
