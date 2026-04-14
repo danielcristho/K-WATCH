@@ -1,0 +1,38 @@
+---
+- name: Add Cilium Helm repo
+  ansible.builtin.shell: |
+    helm repo add cilium https://helm.cilium.io/
+    helm repo update
+  changed_when: true
+
+- name: Copy Hubble values to remote
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../deploy/cilium/hubble-values.yaml"
+    dest: /tmp/hubble-values.yaml
+    mode: '0644'
+
+- name: Install Cilium
+  ansible.builtin.shell: |
+    helm upgrade --install cilium cilium/cilium \
+      --namespace kube-system \
+      --set operator.replicas=1 \
+      --set k3sVars.enabled=true \
+      --set k8sServiceHost={{ master_ip }} \
+      --set k8sServicePort=6443 \
+      --set kubeProxyReplacement=false \
+      --set routingMode=tunnel \
+      --set tunnelProtocol=vxlan \
+      --set mtu=1450 \
+      --set hostRouting.enabled=false \
+      --set hubble.enabled=true \
+      --set hubble.relay.enabled=true \
+      --set hubble.ui.enabled=true \
+      --set hubble.tls.enabled=false \
+      --set hubble.tls.auto.enabled=false \
+      --set hubble.relay.tls.server.enabled=false \
+      --set hubble.relay.tls.client.enabled=false \
+      --set hubble.listenAddress="0.0.0.0:4244" \
+      --set hubble.maxFlows=16383 \
+      -f /tmp/hubble-values.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"

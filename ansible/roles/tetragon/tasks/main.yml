@@ -3,14 +3,12 @@
   ansible.builtin.shell: |
     helm repo add cilium https://helm.cilium.io/
     helm repo update
-  environment:
-    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: true
 
 - name: Install Tetragon
   ansible.builtin.shell: |
     helm upgrade --install tetragon cilium/tetragon \
-      --namespace kube-system \
-      --set tetragon.exportDirectory=/var/run/tetragon/
+      --namespace kube-system
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
 
@@ -21,9 +19,19 @@
     KUBECONFIG: "{{ kubeconfig_path }}"
   changed_when: false
 
+- name: Copy TracingPolicy file to Master
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../deploy/tetragon/tracing-policy-ids.yaml"
+    dest: /tmp/tracing-policy-ids.yaml
+    mode: '0644'
+
 - name: Apply Tetragon TracingPolicy (Syscall Monitoring)
   ansible.builtin.shell: |
-    kubectl --kubeconfig ./kubeconfig apply -f {{ playbook_dir }}/../deploy/tetragon/tracing-policy-ids.yaml
-  delegate_to: localhost
-  become: false
-  ignore_errors: true
+    kubectl apply -f /tmp/tracing-policy-ids.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: tp_apply
+  until: tp_apply.rc == 0
+  retries: 5
+  delay: 10
+  changed_when: tp_apply.rc == 0
