@@ -1,41 +1,72 @@
 ---
+- name: Check if helm is installed
+  ansible.builtin.command: helm version
+  register: helm_check
+  ignore_errors: true
+  changed_when: false
+
 - name: Install helm
   ansible.builtin.shell: |
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh
+    rm get_helm.sh
+  when: helm_check.rc != 0
+
+- name: Check if kubectl is installed
+  ansible.builtin.command: kubectl version --client
+  register: kubectl_check
+  ignore_errors: true
+  changed_when: false
 
 - name: Install kubectl
   ansible.builtin.shell: |
     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
     chmod +x kubectl
     sudo mv kubectl /usr/local/bin
+  when: kubectl_check.rc != 0
+
+- name: Check if k3s is installed
+  ansible.builtin.command: k3s --version
+  register: k3s_check
+  ignore_errors: true
+  changed_when: false
 
 - name: Install k3s
   ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy" sh -
+    curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable kube-proxy --disable-cloud-controller" sh -
+
+- name: Create kubeconfig directory
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.kube"
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
 
 - name: Configure kubeconfig
-  ansible.builtin.shell: |
-    mkdir -p /home/agent007/.kube
-    cp /etc/rancher/k3s/k3s.yaml /home/agent007/.kube/config
-    chown -R agent007:agent007 /home/agent007/.kube/config
-    chmod 600 /home/agent007/.kube/config
+  ansible.builtin.copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ kubeconfig_path }}"
+    remote_src: true
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
 
-- name: Replace 127.0.0.1 with 192.168.122.10 in kubeconfig
+- name: Replace 127.0.0.1 with master IP in kubeconfig
   ansible.builtin.replace:
-    path: /home/agent007/.kube/config
+    path: "{{ kubeconfig_path }}"
     regexp: 'https://127\.0\.0\.1:6443'
-    replace: "https://192.168.122.10:6443"
+    replace: "https://{{ master_ip }}:6443"
 
 - name: Fetch k3s token
   ansible.builtin.fetch:
-    src: /var/lib/rancher/k3s/server/node-token
+    src: "{{ k3s_token_file }}"
     dest: ./token
     flat: yes
 
 - name: Fetch kubeconfig
   ansible.builtin.fetch:
-    src: /home/agent007/.kube/config
+    src: "{{ kubeconfig_path }}"
     dest: ./kubeconfig
     flat: yes

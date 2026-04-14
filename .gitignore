@@ -206,4 +206,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# 
+# Ansible
+hosts
+
+# K8s
+token
+kubeconfig

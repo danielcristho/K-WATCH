@@ -1,0 +1,30 @@
+---
+- name: Add Falco Helm repo
+  ansible.builtin.shell: |
+    helm repo add falcosecurity https://falcosecurity.github.io/charts
+    helm repo update
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Create falco namespace
+  kubernetes.core.k8s:
+    name: falco
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig_path }}"
+
+- name: Install Falco
+  ansible.builtin.shell: |
+    helm upgrade --install falco falcosecurity/falco \
+      --namespace falco \
+      --set tty=true \
+      --set driver.kind=ebpf
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Wait for Falco to be ready
+  ansible.builtin.command:
+    cmd: kubectl rollout status daemonset falco -n falco --timeout=60s
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  changed_when: false
