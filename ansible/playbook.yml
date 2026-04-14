@@ -1,22 +1,40 @@
 ---
-- name: Gather facts for all hosts
+- name: Gathering Facts
   hosts: all
-  gather_facts: true
+  become: true
+  remote_user: agent007
 
 - name: Setup Master
   hosts: master
+  remote_user: agent007
   become: true
   roles:
-    - config
     - master
-    - manage-cluster
-    - tetragon
 
 - name: Setup Worker
-  hosts:
-    - worker
-  become: true
+  hosts: worker
   remote_user: agent007
+  become: true
   roles:
-    - config
     - worker
+
+- name: Setup Safety Networking
+  hosts: master
+  remote_user: agent007
+  become: true
+  roles:
+    - cilium
+
+- name: Setup Security Monitoring
+  hosts: master
+  remote_user: agent007
+  become: true
+  roles:
+    - tetragon
+
+- name: Cluster Administration
+  hosts: master
+  remote_user: agent007
+  become: true
+  roles:
+    - manage-cluster

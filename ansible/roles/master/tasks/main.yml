@@ -34,7 +34,7 @@
 
 - name: Install k3s
   ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable kube-proxy --disable-cloud-controller" sh -
+    curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy" sh -
 
 - name: Create kubeconfig directory
   ansible.builtin.file:
