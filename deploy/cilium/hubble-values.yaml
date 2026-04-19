@@ -11,8 +11,24 @@ hubble:
       - http
   relay:
     enabled: true
+    retryTimeout: 30s
+    dialTimeout: 5s
+    listenPort: "4245"
+    tls:
+      client:
+        enabled: false
+      server:
+        enabled: false
   ui:
     enabled: true
+    replicas: 1
+    backend:
+      hubbleRelayAddress: "hubble-relay:80"
   export:
     enabled: true
-    bufferSize: 4096
+    bufferSize: 16384
+  maxFlows: 16384
+  tls:
+    enabled: false
+  listenAddress: ":4244"
+  socketPath: "/var/run/cilium/hubble.sock"
