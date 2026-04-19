@@ -1,72 +1,60 @@
 ---
-- name: Check if helm is installed
-  ansible.builtin.command: helm version
-  register: helm_check
-  ignore_errors: true
-  changed_when: false
+- name: Check if cluster already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_init_check
 
-- name: Install helm
-  ansible.builtin.shell: |
-    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-    chmod 700 get_helm.sh
-    ./get_helm.sh
-    rm get_helm.sh
-  when: helm_check.rc != 0
-
-- name: Check if kubectl is installed
-  ansible.builtin.command: kubectl version --client
-  register: kubectl_check
-  ignore_errors: true
-  changed_when: false
-
-- name: Install kubectl
-  ansible.builtin.shell: |
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    sudo mv kubectl /usr/local/bin
-  when: kubectl_check.rc != 0
-
-- name: Check if k3s is installed
-  ansible.builtin.command: k3s --version
-  register: k3s_check
-  ignore_errors: true
-  changed_when: false
-
-- name: Install k3s
-  ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy" sh -
-
-- name: Create kubeconfig directory
-  ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.kube"
-    state: directory
-    mode: "0755"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-
-- name: Configure kubeconfig
+- name: Configure kubelet node-ip
   ansible.builtin.copy:
-    src: /etc/rancher/k3s/k3s.yaml
-    dest: "{{ kubeconfig_path }}"
-    remote_src: true
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    mode: "0600"
+    dest: /etc/default/kubelet
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ wg_master_ip }}"
 
-- name: Replace 127.0.0.1 with master IP in kubeconfig
-  ansible.builtin.replace:
-    path: "{{ kubeconfig_path }}"
-    regexp: 'https://127\.0\.0\.1:6443'
-    replace: "https://{{ master_ip }}:6443"
+- name: Initialize Kubernetes cluster
+  ansible.builtin.shell: |
+    kubeadm init \
+      --apiserver-advertise-address={{ wg_master_ip }} \
+      --pod-network-cidr={{ k8s_pod_cidr }} \
+      --service-cidr={{ k8s_service_cidr }} \
+      --skip-phases=addon/kube-proxy \
+      --node-name={{ inventory_hostname }}
+  when: not kubeadm_init_check.stat.exists
 
-- name: Fetch k3s token
+- name: Setup kubeconfig for agent007 and root
+  ansible.builtin.shell: |
+    mkdir -p /home/{{ ansible_user }}/.kube /root/.kube
+    cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
+    cp /etc/kubernetes/admin.conf /root/.kube/config
+    chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube
+  changed_when: true
+
+- name: Fetch kubeconfig and join command
+  ansible.builtin.shell: |
+    kubeadm token create --print-join-command > /tmp/kubeadm_join_command
+  changed_when: false
+
+- name: Fetch files to controller
   ansible.builtin.fetch:
-    src: "{{ k3s_token_file }}"
-    dest: ./token
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
     flat: yes
+  loop:
+    - { src: "/etc/kubernetes/admin.conf", dest: "./kubeconfig" }
+    - { src: "/tmp/kubeadm_join_command", dest: "./kubeadm_join_command" }
 
-- name: Fetch kubeconfig
-  ansible.builtin.fetch:
-    src: "{{ kubeconfig_path }}"
-    dest: ./kubeconfig
-    flat: yes
+- name: Install Helm, Cilium, Hubbl
+  ansible.builtin.shell: |
+    # Helm
+    if ! command -v helm &> /dev/null; then
+      curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    fi
+    # Cilium CLI
+    if ! command -v cilium &> /dev/null; then
+      CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+      curl -L --fail https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-amd64.tar.gz | tar xzvf - -C /usr/local/bin
+    fi
+    # Hubble CLI
+    if ! command -v hubble &> /dev/null; then
+      HUBBLE_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/hubble/main/stable.txt)
+      curl -L --fail https://github.com/cilium/hubble/releases/download/$HUBBLE_VERSION/hubble-linux-amd64.tar.gz | tar xzvf - -C /usr/local/bin
+    fi
+  changed_when: true

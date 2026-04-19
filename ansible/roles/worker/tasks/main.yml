@@ -1,46 +1,26 @@
 ---
-- name: Check if kubectl is installed
-  ansible.builtin.command: kubectl version --client
-  register: kubectl_check
-  ignore_errors: true
-  changed_when: false
-
-- name: Install kubectl
-  ansible.builtin.shell: |
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    sudo mv kubectl /usr/local/bin
-  when: kubectl_check.rc != 0
-
-- name: Copy master token
+- name: Configure kubelet node-ip
   ansible.builtin.copy:
-    src: ./token
-    dest: /tmp/token
-    mode: "0644"
+    dest: /etc/default/kubelet
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ wg_worker_ip }}"
 
-- name: Create kubeconfig directory
-  ansible.builtin.file:
-    path: "/home/{{ ansible_user }}/.kube"
-    state: directory
-    mode: "0755"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-
-- name: Copy kubeconfig file
+- name: Copy join command to worker
   ansible.builtin.copy:
-    src: ./kubeconfig
-    dest: "{{ kubeconfig_path }}"
-    mode: "0600"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
+    src: ./kubeadm_join_command
+    dest: /tmp/kubeadm_join_command
+    mode: '0755'
 
-- name: Check if k3s is installed
-  ansible.builtin.command: k3s --version
-  register: k3s_check
-  ignore_errors: true
-  changed_when: false
-
-- name: Install k3s agent on worker
+- name: Join cluster
   ansible.builtin.shell: |
-    TOKEN=$(cat /tmp/token)
-    curl -sfL https://get.k3s.io | K3S_TOKEN=$TOKEN INSTALL_K3S_EXEC="agent --server https://{{ master_ip }}:6443 --node-ip={{ ansible_host }}" sh -
+    if [ ! -f /etc/kubernetes/kubelet.conf ]; then
+      bash /tmp/kubeadm_join_command --node-ip={{ wg_worker_ip }}
+    fi
+  changed_when: true
+
+- name: Open Hubble port
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "4244"
+    jump: ACCEPT
+    action: insert

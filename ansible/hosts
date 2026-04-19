@@ -1,8 +1,5 @@
-[k3s-master]
-192.168.122.10 ansible_user=agent007
+[master]
+217.217.255.103 ansible_user=agent007 ansible_port=2219
 
-[k3s-worker1]
-192.168.122.11 ansible_user=agent007
-
-[k3s-worker2]
-192.168.122.12 ansible_user=agent007
+[worker]
+217.216.110.115 ansible_user=agent007 ansible_port=2219

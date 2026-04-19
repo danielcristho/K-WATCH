@@ -1,0 +1,78 @@
+---
+- name: Disable swap
+  ansible.builtin.shell: |
+    swapoff -a
+    sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+  changed_when: true
+
+- name: Load kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+
+- name: Activate kernel modules
+  ansible.builtin.shell: |
+    modprobe overlay
+    modprobe br_netfilter
+  changed_when: true
+
+- name: Set sysctl parameters
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+
+- name: Apply sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: true
+
+- name: Install base dependencies
+  ansible.builtin.apt:
+    name: [apt-transport-https, ca-certificates, curl, gnupg, software-properties-common]
+    state: present
+    update_cache: true
+
+- name: Add Kubernetes apt keyring
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | \
+      gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+
+- name: Install containerd
+  ansible.builtin.apt:
+    name: containerd
+    state: present
+    update_cache: true
+
+- name: Configure containerd
+  ansible.builtin.shell: |
+    mkdir -p /etc/containerd
+    containerd config default > /etc/containerd/config.toml
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+  changed_when: true
+
+- name: Restart and enable containerd
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
+    enabled: true
+
+- name: Install kubeadm, kubelet, kubectl
+  ansible.builtin.apt:
+    name: [kubeadm, kubelet, kubectl]
+    state: present
+    update_cache: true
+
+- name: Hold kube versions
+  ansible.builtin.command: apt-mark hold kubeadm kubelet kubectl
+  changed_when: true
