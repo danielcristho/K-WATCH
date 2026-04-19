@@ -16,4 +16,4 @@ teamtnt:
   simulateHostMount: false
 
 nodeSelector:
-  kubernetes.io/hostname: k3s-worker1 # Default to a worker node
+  kubernetes.io/hostname: worker

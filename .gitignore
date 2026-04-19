@@ -207,8 +207,9 @@ marimo/_lsp/
 __marimo__/
 
 # Ansible
-hosts
+ansible/hosts
 
 # K8s
-token
-kubeconfig
+ansible/token
+ansible/kubeconfig
+ansible/kubeadm_join_command

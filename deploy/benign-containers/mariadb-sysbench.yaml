@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: benign-workload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name: mariadb
+        image: mariadb:10.6
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          value: "kids_password"
+        - name: MARIADB_DATABASE
+          value: "ids_test"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb-service
+  namespace: benign-workload
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mariadb
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sysbench-workload
+  namespace: benign-workload
+spec:
+  template:
+    spec:
+      containers:
+      - name: sysbench
+        image: severalnines/sysbench
+        resources:
+          requests:
+            cpu: 250m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Waiting for MariaDB..."
+            sleep 30;
+            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write prepare;
+            echo "Starting stress test...";
+            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test --time=300 --threads=4 oltp_read_write run;
+            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write cleanup;
+      restartPolicy: Never
+  backoffLimit: 2
