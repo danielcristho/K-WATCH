@@ -1,5 +1,13 @@
 ---
 ansible_user: agent007
-master_ip: "{{ groups['master'][0] }}"
-k3s_token_file: "/var/lib/rancher/k3s/server/node-token"
+master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
 kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
+
+# WireGuard private network (untuk komunikasi internal cluster)
+wg_master_ip: "10.10.0.1"
+wg_worker_ip: "10.10.0.2"
+wg_cidr: "10.10.0.0/24"
+
+# Kubernetes
+k8s_pod_cidr: "10.42.0.0/16"
+k8s_service_cidr: "10.43.0.0/16"

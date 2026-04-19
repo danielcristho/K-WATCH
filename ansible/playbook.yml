@@ -4,37 +4,37 @@
   become: true
   remote_user: agent007
 
+- name: Setup WireGuard Private Network
+  hosts: all
+  become: true
+  roles: [wireguard]
+
+- name: Setup Base Kubernetes
+  hosts: all
+  become: true
+  roles: [k8s-base]
+
 - name: Setup Master
   hosts: master
-  remote_user: agent007
   become: true
-  roles:
-    - master
+  roles: [master]
 
 - name: Setup Worker
   hosts: worker
-  remote_user: agent007
   become: true
-  roles:
-    - worker
+  roles: [worker]
 
-- name: Setup Safety Networking
+- name: Setup Safety Networking (Cilium + Hubble)
   hosts: master
-  remote_user: agent007
   become: true
-  roles:
-    - cilium
+  roles: [cilium]
 
-- name: Setup Security Monitoring
+- name: Setup Security Monitoring (Tetragon)
   hosts: master
-  remote_user: agent007
   become: true
-  roles:
-    - tetragon
+  roles: [tetragon]
 
-- name: Cluster Administration
+- name: Manage Cluster
   hosts: master
-  remote_user: agent007
   become: true
-  roles:
-    - manage-cluster
+  roles: [manage-cluster]

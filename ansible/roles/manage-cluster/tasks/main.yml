@@ -1,25 +1,37 @@
 ---
+- name: Get worker node names from Kubernetes
+  ansible.builtin.shell: |
+    kubectl get nodes --no-headers \
+      --selector='!node-role.kubernetes.io/control-plane' \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  register: worker_node_names
+  changed_when: false
+
 - name: Label worker nodes
   ansible.builtin.shell: |
     kubectl label node {{ item }} node-role.kubernetes.io/worker=worker --overwrite
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
-  loop: "{{ groups['worker'] }}"
+  loop: "{{ worker_node_names.stdout_lines | select('ne', '') | list }}"
+  when: worker_node_names.stdout_lines | length > 0
   ignore_errors: true
 
-- name: Add Kubernetes Dashboard Helm repo
+- name: Install Kube Dashboard
   ansible.builtin.shell: |
-    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-    helm repo update
-  changed_when: true
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
 
-- name: Install Kubernetes Dashboard
+- name: Copy Security Demo manifest to Master
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../deploy/demo-hubble.yaml"
+    dest: /tmp/demo-hubble.yaml
+    mode: '0644'
+
+- name: Apply Security Demo (Frontend & Malicious)
   ansible.builtin.shell: |
-    helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard \
-      --create-namespace \
-      --namespace kubernetes-dashboard \
-      --set protocolHttp=true \
-      --set service.type=ClusterIP \
-      --set auth.type=token
+    kubectl apply -f /tmp/demo-hubble.yaml
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
