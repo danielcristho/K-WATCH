@@ -1,0 +1,5 @@
+[master]
+127.0.0.1 ansible_user=agent007 ansible_port=2217
+
+[worker]
+127.0.0.1 ansible_user=agent007 ansible_port=2217
