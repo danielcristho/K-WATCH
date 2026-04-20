@@ -25,4 +25,4 @@ forward-svc:
     kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
 to-csv input="events.json" output="events.csv":
-    python3 training/json_to_csv.py {{input}} {{output}}
+    python3 feature_engineering/json_to_csv.py {{input}} {{output}}
