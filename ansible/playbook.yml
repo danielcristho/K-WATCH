@@ -4,6 +4,11 @@
   become: true
   remote_user: agent007
 
+- name: Setup Configuration & Tools
+  hosts: all
+  become: true
+  roles: [config]
+
 - name: Setup WireGuard Private Network
   hosts: all
   become: true

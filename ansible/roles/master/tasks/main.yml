@@ -41,7 +41,7 @@
     - { src: "/etc/kubernetes/admin.conf", dest: "./kubeconfig" }
     - { src: "/tmp/kubeadm_join_command", dest: "./kubeadm_join_command" }
 
-- name: Install Helm, Cilium, Hubbl
+- name: Install Helm, Cilium, Hubble CLI
   ansible.builtin.shell: |
     # Helm
     if ! command -v helm &> /dev/null; then
