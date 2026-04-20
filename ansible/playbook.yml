@@ -29,12 +29,12 @@
   become: true
   roles: [worker]
 
-- name: Setup Safety Networking (Cilium + Hubble)
+- name: Setup Cilium & Hubble
   hosts: master
   become: true
   roles: [cilium]
 
-- name: Setup Security Monitoring (Tetragon)
+- name: Setup Tetragon
   hosts: master
   become: true
   roles: [tetragon]
