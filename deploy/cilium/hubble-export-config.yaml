@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cilium-hubble-export-config
+  namespace: kube-system
+data:
+  default-namespace.json: |
+    {
+      "filePath": "/var/run/cilium/hubble/default-namespace.log",
+      "fileMaxSizeMb": 50,
+      "fileMaxBackups": 2,
+      "includeFilters": [
+        {"source_namespace": ["default"]},
+        {"destination_namespace": ["default"]}
+      ],
+      "fieldMask": [
+        "time",
+        "source.namespace",
+        "source.pod_name",
+        "destination.namespace",
+        "destination.pod_name",
+        "destination.port",
+        "verdict",
+        "l4",
+        "Type"
+      ]
+    }

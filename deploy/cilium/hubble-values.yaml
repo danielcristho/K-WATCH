@@ -26,7 +26,15 @@ hubble:
       hubbleRelayAddress: "hubble-relay:80"
   export:
     enabled: true
-    bufferSize: 16384
+    static:
+      enabled: true
+      filePath: /var/run/cilium/hubble/events.log
+      fileMaxSizeMb: 10
+      fileMaxBackups: 5
+    dynamic:
+      enabled: true
+      config:
+        configMapName: cilium-hubble-export-config
   maxFlows: 16384
   tls:
     enabled: false
