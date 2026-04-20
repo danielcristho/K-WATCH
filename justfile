@@ -24,5 +24,16 @@ forward-svc:
     kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
     kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
-to-csv input="events.json" output="events.csv":
+# Tarik log mentah dari cluster
+data-pull:
+    kubectl -n kube-system exec ds/cilium -- cat /var/run/cilium/hubble/events.log > events.json
+
+# Konversi log ke CSV (setelah di-pull)
+to-csv input="events.json" output="dataset.csv":
     python3 feature_engineering/json_to_csv.py {{input}} {{output}}
+
+# Jalankan keduanya sekaligus
+collect-data: data-pull
+    @just to-csv events.json dataset.csv
+    @echo "Dataset siap di: dataset.csv"
+
