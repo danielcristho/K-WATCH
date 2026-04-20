@@ -23,3 +23,6 @@ malicious-clean:
 forward-svc:
     kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
     kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
+
+export-data:
+    python3 training/json_to_csv.py {{input}} {{output}}
