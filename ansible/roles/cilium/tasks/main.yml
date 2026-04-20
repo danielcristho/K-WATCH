@@ -48,6 +48,18 @@
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
 
+- name: Copy Hubble Export ConfigMap to remote
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../deploy/cilium/hubble-export-config.yaml"
+    dest: /tmp/hubble-export-config.yaml
+    mode: '0644'
+
+- name: Apply Hubble Dynamic Export ConfigMap
+  ansible.builtin.shell: |
+    kubectl apply -f /tmp/hubble-export-config.yaml
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
 - name: Wait for Cilium and Hubble components
   ansible.builtin.shell: |
     kubectl rollout status ds/cilium -n kube-system --timeout=120s

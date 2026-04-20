@@ -18,3 +18,8 @@ malicious:
 
 malicious-clean:
     helm uninstall malicious
+
+# Port-forward Hubble Relay & Hubble UI
+forward-svc:
+    kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
+    kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
