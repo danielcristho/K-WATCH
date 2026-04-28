@@ -28,16 +28,11 @@ forward-svc:
     kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
     kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
-# Pull the logs (Hubble & Tetragon)
-data-pull:
-    kubectl -n kube-system exec ds/cilium -- cat /var/run/cilium/hubble/events.log > hubble.json
-    kubectl -n kube-system logs ds/tetragon --tail=5000 > tetragon.json
 
-# Process into hybrid dataset (5-gram syscall + network stats)
-hybrid-data: data-pull
-    python3 feature_engineering/hybrid_processor.py
-    @echo "Hybrid dataset ready at: training/hybrid_dataset.csv"
+# Update tetragon tracing policy
+tetra-tp:
+    kubectl apply -f deploy/tetragon/tracing-policy-ids.yaml
 
-# Convert Hubble JSON log to CSV
-to-csv input="hubble.json" output="dataset.csv":
-    python3 feature_engineering/json_to_csv.py {{input}} {{output}}
+# Kubeconfig:
+kubeconfig:
+    export KUBECONFIG=ansible/kubeconfig
