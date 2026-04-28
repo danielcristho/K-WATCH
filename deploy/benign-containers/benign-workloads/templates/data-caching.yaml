@@ -1,13 +1,8 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: benign-workload
----
+{{- if .Values.dataCaching.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: memcached-server
-  namespace: benign-workload
 spec:
   replicas: 1
   selector:
@@ -35,9 +30,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: memcached-service
-  namespace: benign-workload
 spec:
   ports:
   - port: 11211
   selector:
     app: memcached
+{{- end }}

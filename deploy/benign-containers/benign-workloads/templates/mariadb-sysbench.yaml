@@ -1,18 +1,17 @@
----
+{{- if .Values.mariadbSysbench.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mariadb
-  namespace: benign-workload
+  name: mariadb-sysbench
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mariadb
+      app: mariadb-sysbench
   template:
     metadata:
       labels:
-        app: mariadb
+        app: mariadb-sysbench
     spec:
       containers:
       - name: mariadb
@@ -35,19 +34,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mariadb-service
-  namespace: benign-workload
+  name: mariadb-sysbench-service
 spec:
   ports:
   - port: 3306
   selector:
-    app: mariadb
+    app: mariadb-sysbench
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: sysbench-workload
-  namespace: benign-workload
 spec:
   template:
     spec:
@@ -66,9 +63,10 @@ spec:
           - |
             echo "Waiting for MariaDB..."
             sleep 30;
-            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write prepare;
+            sysbench --db-driver=mysql --mysql-host=mariadb-sysbench-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write prepare;
             echo "Starting stress test...";
-            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test --time=300 --threads=4 oltp_read_write run;
-            sysbench --db-driver=mysql --mysql-host=mariadb-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write cleanup;
+            sysbench --db-driver=mysql --mysql-host=mariadb-sysbench-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test --time=300 --threads=4 oltp_read_write run;
+            sysbench --db-driver=mysql --mysql-host=mariadb-sysbench-service --mysql-user=root --mysql-password=kids_password --mysql-db=ids_test oltp_read_write cleanup;
       restartPolicy: Never
   backoffLimit: 2
+{{- end }}

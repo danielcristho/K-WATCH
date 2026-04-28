@@ -1,17 +1,17 @@
+{{- if .Values.webServing.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-serving-db
-  namespace: benign-workload
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: web-db
+      app: web-serving-db
   template:
     metadata:
       labels:
-        app: web-db
+        app: web-serving-db
     spec:
       containers:
       - name: db
@@ -28,16 +28,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-serving-app
-  namespace: benign-workload
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: web-app
+      app: web-serving-app
   template:
     metadata:
       labels:
-        app: web-app
+        app: web-serving-app
     spec:
       containers:
       - name: app
@@ -56,9 +55,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: web-service
-  namespace: benign-workload
 spec:
   ports:
   - port: 80
   selector:
-    app: web-app
+    app: web-serving-app
+{{- end }}
