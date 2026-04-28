@@ -29,9 +29,27 @@ forward-svc:
     kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
 
-# Update tetragon tracing policy
+# Deploy tetragon policy & bpf-library
 tetra-tp:
     kubectl apply -f deploy/tetragon/tracing-policy-ids.yaml
+    kubectl apply -f deploy/tetragon/bpf-library-policy.yaml
+    kubectl get tracingpolicies
+
+# Check tetragon logs (bpf policy & syscall)
+tetra-logs:
+    # kubectl -n kube-system logs ds/tetragon -c export-stdout -f | grep process_kprobe
+    kubectl -n kube-system logs ds/tetragon -c export-stdout --tail=100 | grep process_kprobe | wc -l
+    kubectl -n kube-system logs ds/tetragon -c tetragon --tail=100 | grep -i bpf-library-policy
+    kubectl -n kube-system logs ds/tetragon -c tetragon --tail=100 | grep -i ids-syscall-monitoring
+
+# Run benign workload
+benign-deploy:
+    helm upgrade --install benign deploy/benign-containers/benign-workloads -n benign-workloads --create-namespace
+
+# Delete benign workload
+benign-clean:
+    helm uninstall benign -n benign-workloads || true
+    kubectl delete namespace benign-workloads --ignore-not-found
 
 # Kubeconfig:
 kubeconfig:
