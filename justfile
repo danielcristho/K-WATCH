@@ -38,6 +38,6 @@ hybrid-data: data-pull
     python3 feature_engineering/hybrid_processor.py
     @echo "Hybrid dataset ready at: training/hybrid_dataset.csv"
 
-# Legacy: Convert Hubble JSON log to simple CSV
+# Convert Hubble JSON log to CSV
 to-csv input="hubble.json" output="dataset.csv":
     python3 feature_engineering/json_to_csv.py {{input}} {{output}}
