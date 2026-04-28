@@ -46,3 +46,37 @@ spec:
       selectors:
         - matchActions:
             - action: Post
+    - call: "sys_read"
+      syscall: true
+    - call: "sys_write"
+      syscall: true
+    - call: "sys_close"
+      syscall: true
+    - call: "sys_mmap"
+      syscall: true
+    - call: "sys_sendto"
+      syscall: true
+    - call: "sys_recvfrom"
+      syscall: true
+    - call: "sys_clone"
+      syscall: true
+    - call: "sys_kill"
+      syscall: true
+    - call: "sys_nanosleep"
+      syscall: true
+    - call: "sys_sched_yield"
+      syscall: true
+    - call: "sys_epoll_pwait"
+      syscall: true
+    - call: "sys_newfstatat"
+      syscall: true
+    - call: "sys_mprotect"
+      syscall: true
+    - call: "sys_munmap"
+      syscall: true
+    - call: "sys_brk"
+      syscall: true
+    - call: "sys_rt_sigaction"
+      syscall: true
+    - call: "sys_access"
+      syscall: true
