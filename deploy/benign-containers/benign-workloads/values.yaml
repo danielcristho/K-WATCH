@@ -1,0 +1,12 @@
+dataCaching:
+  enabled: true
+flaskTodo:
+  enabled: true
+mariadbSysbench:
+  enabled: true
+mediaStreaming:
+  enabled: true
+webServing:
+  enabled: true
+wordpressMysql:
+  enabled: true

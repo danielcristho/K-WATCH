@@ -11,4 +11,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "requests>=2.33.1",
     "scikit-learn>=1.8.0",
+    "imbalanced-learn>=0.13.0",
+    "matplotlib>=3.10.0",
+    "seaborn>=0.13.0",
 ]

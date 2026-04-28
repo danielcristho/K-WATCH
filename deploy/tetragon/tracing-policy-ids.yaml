@@ -8,9 +8,9 @@ spec:
       syscall: true
       args:
         - index: 0
-          type: "path" # path
+          type: "path"
         - index: 1
-          type: "string" # argv
+          type: "string"
       selectors:
         - matchActions:
             - action: Post
@@ -18,9 +18,9 @@ spec:
       syscall: true
       args:
         - index: 1
-          type: "string" # filename
+          type: "string"
         - index: 2
-          type: "int" # flags
+          type: "int"
       selectors:
         - matchActions:
             - action: Post
@@ -28,11 +28,11 @@ spec:
       syscall: true
       args:
         - index: 0
-          type: "int" # domain
+          type: "int"
         - index: 1
-          type: "int" # type
+          type: "int"
         - index: 2
-          type: "int" # protocol
+          type: "int"
       selectors:
         - matchActions:
             - action: Post
@@ -40,43 +40,79 @@ spec:
       syscall: true
       args:
         - index: 0
-          type: "int" # fd
+          type: "int"
         - index: 1
-          type: "sockaddr" # addr
+          type: "sockaddr"
       selectors:
         - matchActions:
             - action: Post
     - call: "sys_read"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_write"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_close"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_mmap"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_sendto"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_recvfrom"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_clone"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_kill"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_nanosleep"
       syscall: true
-    - call: "sys_sched_yield"
-      syscall: true
-    - call: "sys_epoll_pwait"
-      syscall: true
-    - call: "sys_newfstatat"
-      syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_mprotect"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_munmap"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_brk"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_rt_sigaction"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
     - call: "sys_access"
       syscall: true
+      selectors:
+        - matchActions:
+            - action: Post
