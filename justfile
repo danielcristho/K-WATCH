@@ -51,6 +51,18 @@ benign-clean:
     helm uninstall benign -n benign-workloads || true
     kubectl delete namespace benign-workloads --ignore-not-found
 
+# Collect data: multi-session with workload stimulation (5 sessions, 5 min interval)
+collect-data:
+    cd feature_engineering && ./collect_data.sh --sessions 5 --interval 300 --stimulate
+
+# Quick collect: fewer sessions for testing (3 sessions, 3 min interval)
+collect-quick:
+    cd feature_engineering && ./collect_data.sh --sessions 3 --interval 180 --stimulate
+
+# Collect only (no stimulation): useful when workloads are already active
+collect-passive sessions="5" interval="300":
+    cd feature_engineering && ./collect_data.sh --sessions {{sessions}} --interval {{interval}}
+
 # Kubeconfig:
 kubeconfig:
     export KUBECONFIG=ansible/kubeconfig
