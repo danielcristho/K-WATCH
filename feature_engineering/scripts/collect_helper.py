@@ -10,7 +10,8 @@ from datetime import datetime
 
 # Constants
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-RAW_LOGS_DIR = os.path.join(SCRIPT_DIR, "raw_logs")
+FEATURE_DIR = os.path.dirname(SCRIPT_DIR)  # feature_engineering/
+RAW_LOGS_DIR = os.path.join(FEATURE_DIR, "raw_logs")
 SESSIONS_DIR = os.path.join(RAW_LOGS_DIR, "sessions")
 KUBECONFIG_PATH = "/mnt/nvme0n1p11/Github/project-kIDS/ansible/kubeconfig"
 
