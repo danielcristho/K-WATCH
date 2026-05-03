@@ -13,9 +13,11 @@ ansible:
 ansible-ping:
     cd ansible && ansible al -m ping
 
+export KUBECONFIG := "ansible/kubeconfig"
+
 # Deploy malicious containers
 malicious:
-    kubectl create namespace malicious --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace malicious --dry-run=client -o yaml | kubectl apply --validate=false -f -
     helm upgrade --install malicious ./deployment_charts/malicious-containers -n malicious
 
 # Cleanup malicious containers
