@@ -61,13 +61,18 @@ spec:
                 
                 sleep 60
                 
-                echo "--- Detonating k8s.lateral-movement.container-exec-pod ---"
-                stratus detonate k8s.lateral-movement.container-exec-pod --cleanup
+                echo "--- Detonating k8s.credential-access.steal-serviceaccount-token ---"
+                stratus detonate k8s.credential-access.steal-serviceaccount-token --cleanup
                 
                 sleep 60
                 
-                echo "--- Detonating k8s.credential-access.secrets-dump-remote ---"
-                stratus detonate k8s.credential-access.secrets-dump-remote --cleanup
+                echo "--- Detonating k8s.privilege-escalation.hostpath-volume ---"
+                stratus detonate k8s.privilege-escalation.hostpath-volume --cleanup
+                
+                sleep 60
+
+                echo "--- Detonating k8s.persistence.create-admin-clusterrole ---"
+                stratus detonate k8s.persistence.create-admin-clusterrole --cleanup
                 
                 echo "Cycle complete. Waiting 5 minutes..."
                 sleep 300
