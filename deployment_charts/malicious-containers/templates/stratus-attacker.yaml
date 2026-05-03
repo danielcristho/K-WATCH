@@ -1,0 +1,82 @@
+{{- if .Values.stratus.enabled -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: stratus-attacker
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: stratus-attacker-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: stratus-attacker
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-stratus
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: stratus-attacker
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: stratus-attacker
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: stratus-attacker
+        kids-label: "1"
+    spec:
+      serviceAccountName: stratus-attacker
+      containers:
+        - name: stratus
+          image: {{ .Values.stratus.image }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache wget ca-certificates tar
+              wget https://github.com/DataDog/stratus-red-team/releases/latest/download/stratus-red-team_Linux_x86_64.tar.gz
+              tar -xzf stratus-red-team_Linux_x86_64.tar.gz
+              chmod +x stratus
+              mv stratus /usr/local/bin/stratus
+              
+              echo "Stratus Red Team initialized (version: $(stratus --version)). Starting attack loops..."
+              
+              while true; do
+                echo "--- Detonating k8s.privilege-escalation.privileged-pod ---"
+                stratus detonate k8s.privilege-escalation.privileged-pod --cleanup
+                
+                sleep 60
+                
+                echo "--- Detonating k8s.lateral-movement.container-exec-pod ---"
+                stratus detonate k8s.lateral-movement.container-exec-pod --cleanup
+                
+                sleep 60
+                
+                echo "--- Detonating k8s.credential-access.secrets-dump-remote ---"
+                stratus detonate k8s.credential-access.secrets-dump-remote --cleanup
+                
+                echo "Cycle complete. Waiting 5 minutes..."
+                sleep 300
+              done
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+{{- end }}

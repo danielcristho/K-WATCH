@@ -1,0 +1,53 @@
+{{- if .Values.coinminer.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-coinminer
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: coinminer
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: coinminer
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: coinminer
+        kids-label: "1"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: coinminer
+          image: {{ .Values.coinminer.image }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Trojan Coinminer simulation..."
+              while true; do
+                echo "[$(date)] Secretly installing mining components..."
+                # Hide binary in a common directory
+                cp /bin/sleep /tmp/.system-update
+                chmod +x /tmp/.system-update
+                
+                echo "[$(date)] Launching mining process in background..."
+                /tmp/.system-update 60 &
+                
+                echo "[$(date)] Hiding process from 'ps' (simulated)..."
+                # This is just a simulation of the behavior
+                
+                echo "[$(date)] Resource consumption (high CPU simulation)..."
+                # Simulate high CPU usage
+                dd if=/dev/zero of=/dev/null bs=1M count=100 2>/dev/null
+                
+                wait
+                sleep 30
+              done
+{{- end }}
