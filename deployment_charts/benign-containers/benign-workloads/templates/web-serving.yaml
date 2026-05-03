@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: web-serving-db
+        kids-label: "0"
     spec:
       containers:
       - name: db
@@ -23,6 +24,18 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
+        ports:
+        - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-serving-db
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: web-serving-db
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -37,6 +50,7 @@ spec:
     metadata:
       labels:
         app: web-serving-app
+        kids-label: "0"
     spec:
       containers:
       - name: app
@@ -50,6 +64,32 @@ spec:
             memory: 256Mi
         ports:
         - containerPort: 80
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            /etc/bootstrap.sh http web-service web-serving-db memcached-service
+            # Ensure services are started and block
+            tail -f /var/log/nginx/access.log
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-server
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: web-serving-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memcached-server
+spec:
+  ports:
+  - port: 11211
+  selector:
+    app: memcached
 ---
 apiVersion: v1
 kind: Service

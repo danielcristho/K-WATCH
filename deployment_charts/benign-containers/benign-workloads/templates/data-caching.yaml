@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: memcached
+        kids-label: "0"
     spec:
       containers:
       - name: server

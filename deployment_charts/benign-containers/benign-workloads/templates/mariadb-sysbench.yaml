@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: mariadb-sysbench
+        kids-label: "0"
     spec:
       containers:
       - name: mariadb
