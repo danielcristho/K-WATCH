@@ -1,18 +1,40 @@
 fullnameOverride: "malicious-containers"
 
+# Binary Label 1: Malicious
 mirai:
   enabled: true
   image: mitjclinic/mirai:v0.0.1-alpha
   interval: 60
   commandOverride: false
+  label: 1
+
+miner:
+  enabled: true
+  xmrig:
+    image: miningcontainers/xmrig
+  xmrStak:
+    image: timonmat/xmr-stak-cpu
+  commandOverride: false
+  label: 1
+
+agent:
+  enabled: true
+  image: alpine:latest
+  commandOverride: true
+  label: 1
+
+coinminer:
+  enabled: true
+  image: alpine:latest
+  commandOverride: true
+  label: 1
 
 kinsing:
   enabled: true
   image: alpine:latest
   commandOverride: true
-  
-teamtnt:
+  label: 1
+stratus:
   enabled: true
-  image: timonmat/xmr-stak-cpu
-  commandOverride: false
-  simulateHostMount: false
+  image: alpine:latest
+  label: 1

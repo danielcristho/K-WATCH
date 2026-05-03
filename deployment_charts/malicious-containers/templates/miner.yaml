@@ -1,0 +1,42 @@
+{{- if .Values.miner.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-miner
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: miner
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: miner
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: miner
+        kids-label: "1"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: xmrig
+          image: {{ .Values.miner.xmrig.image }}
+          resources:
+            requests:
+              cpu: "500m"
+            limits:
+              cpu: "1000m"
+        - name: xmr-stak
+          image: {{ .Values.miner.xmrStak.image }}
+          resources:
+            requests:
+              cpu: "500m"
+            limits:
+              cpu: "1000m"
+{{- end }}
