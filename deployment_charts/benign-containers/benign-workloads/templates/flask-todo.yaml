@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: flask-postgres
+        kids-label: "0"
     spec:
       containers:
       - name: postgres
@@ -52,6 +53,7 @@ spec:
     metadata:
       labels:
         app: flask-todo
+        kids-label: "0"
     spec:
       containers:
       - name: flask-todo

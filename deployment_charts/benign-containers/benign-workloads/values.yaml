@@ -1,12 +1,24 @@
+# Binary Label 0: Benign
 dataCaching:
   enabled: true
-flaskTodo:
-  enabled: true
+  label: 0
+
 mariadbSysbench:
   enabled: true
+  label: 0
+
 mediaStreaming:
   enabled: true
+  label: 0
+
 webServing:
   enabled: true
+  label: 0
+
+flaskTodo:
+  enabled: true
+  label: 0
+
 wordpressMysql:
   enabled: true
+  label: 0
