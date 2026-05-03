@@ -53,16 +53,14 @@ spec:
               chmod +x stratus
               mv stratus /usr/local/bin/stratus
               
-              echo "Stratus Red Team initialized (version: $(stratus --version)). Starting attack loops..."
+              echo "Stratus Red Team initialized (version: $(stratus version)). Starting attack loops..."
               
               while true; do
+                echo "--- Cleaning up previous runs ---"
+                stratus cleanup --all &>/dev/null
+                
                 echo "--- Detonating k8s.privilege-escalation.privileged-pod ---"
                 stratus detonate k8s.privilege-escalation.privileged-pod --cleanup
-                
-                sleep 60
-                
-                echo "--- Detonating k8s.credential-access.steal-serviceaccount-token ---"
-                stratus detonate k8s.credential-access.steal-serviceaccount-token --cleanup
                 
                 sleep 60
                 
@@ -70,9 +68,14 @@ spec:
                 stratus detonate k8s.privilege-escalation.hostpath-volume --cleanup
                 
                 sleep 60
+                
+                echo "--- Detonating k8s.persistence.create-token ---"
+                stratus detonate k8s.persistence.create-token --cleanup
+                
+                sleep 60
 
-                echo "--- Detonating k8s.persistence.create-admin-clusterrole ---"
-                stratus detonate k8s.persistence.create-admin-clusterrole --cleanup
+                echo "--- Detonating k8s.privilege-escalation.nodes-proxy ---"
+                stratus detonate k8s.privilege-escalation.nodes-proxy --cleanup
                 
                 echo "Cycle complete. Waiting 5 minutes..."
                 sleep 300
