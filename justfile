@@ -16,7 +16,7 @@ ansible-ping:
 # Deploy malicious containers
 malicious:
     kubectl create namespace malicious --dry-run=client -o yaml | kubectl apply -f -
-    helm upgrade --install malicious ./deploy/malicious-containers -n malicious
+    helm upgrade --install malicious ./deployment_charts/malicious-containers -n malicious
 
 # Cleanup malicious containers
 malicious-clean:
@@ -31,8 +31,8 @@ forward-svc:
 
 # Deploy tetragon policy & bpf-library
 tetra-tp:
-    kubectl apply -f deploy/tetragon/tracing-policy-ids.yaml
-    kubectl apply -f deploy/tetragon/bpf-library-policy.yaml
+    kubectl apply -f deployment_charts/tetragon/tracing-policy-ids.yaml
+    kubectl apply -f deployment_charts/tetragon/bpf-library-policy.yaml
     kubectl get tracingpolicies
 
 # Check tetragon logs (bpf policy & syscall)
@@ -44,7 +44,7 @@ tetra-logs:
 
 # Run benign workload
 benign-deploy:
-    helm upgrade --install benign deploy/benign-containers/benign-workloads -n benign-workloads --create-namespace
+    helm upgrade --install benign deployment_charts/benign-containers/benign-workloads -n benign-workloads --create-namespace
 
 # Delete benign workload
 benign-clean:
@@ -66,3 +66,4 @@ collect-passive sessions="5" interval="300":
 # Kubeconfig:
 kubeconfig:
     export KUBECONFIG=ansible/kubeconfig
+
