@@ -1,12 +1,7 @@
 ---
-ansible_user: agent007
-master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
+ansible_user: ubuntu
+master_ip: "{{ hostvars[groups['masters'][0]]['ansible_host'] }}"
 kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
-
-# WireGuard private network (untuk komunikasi internal cluster)
-wg_master_ip: "10.10.0.1"
-wg_worker_ip: "10.10.0.2"
-wg_cidr: "10.10.0.0/24"
 
 # Kubernetes
 k8s_pod_cidr: "10.42.0.0/16"

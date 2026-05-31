@@ -7,21 +7,35 @@
 - name: Configure kubelet node-ip
   ansible.builtin.copy:
     dest: /etc/default/kubelet
-    content: "KUBELET_EXTRA_ARGS=--node-ip={{ wg_master_ip }}"
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['private_ip'] }}"
 
 - name: Initialize Kubernetes cluster
   ansible.builtin.shell: |
     kubeadm init \
-      --apiserver-advertise-address={{ wg_master_ip }} \
+      --apiserver-advertise-address={{ hostvars[inventory_hostname]['private_ip'] }} \
+      --apiserver-cert-extra-sans={{ hostvars[inventory_hostname]['ansible_host'] }} \
       --pod-network-cidr={{ k8s_pod_cidr }} \
       --service-cidr={{ k8s_service_cidr }} \
       --skip-phases=addon/kube-proxy \
       --node-name={{ inventory_hostname }}
   when: not kubeadm_init_check.stat.exists
 
-- name: Setup kubeconfig for agent007 and root
+- name: Setup kubeconfig for ubuntu and root
   ansible.builtin.shell: |
     mkdir -p /home/{{ ansible_user }}/.kube /root/.kube
+    cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
+    cp /etc/kubernetes/admin.conf /root/.kube/config
+    chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube
+  changed_when: true
+
+- name: Update kubeconfig server to use public IP
+  ansible.builtin.replace:
+    path: /etc/kubernetes/admin.conf
+    regexp: 'https://{{ hostvars[inventory_hostname]["private_ip"] }}:6443'
+    replace: 'https://{{ hostvars[inventory_hostname]["ansible_host"] }}:6443'
+
+- name: Copy updated kubeconfig to user directories
+  ansible.builtin.shell: |
     cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
     cp /etc/kubernetes/admin.conf /root/.kube/config
     chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube

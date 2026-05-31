@@ -2,17 +2,12 @@
 - name: Gathering Facts
   hosts: all
   become: true
-  remote_user: agent007
+  remote_user: ubuntu
 
 - name: Setup Configuration & Tools
   hosts: all
   become: true
   roles: [config]
-
-- name: Setup WireGuard Private Network
-  hosts: all
-  become: true
-  roles: [wireguard]
 
 - name: Setup Base Kubernetes
   hosts: all
@@ -20,26 +15,21 @@
   roles: [k8s-base]
 
 - name: Setup Master
-  hosts: master
+  hosts: masters
   become: true
   roles: [master]
 
 - name: Setup Worker
-  hosts: worker
+  hosts: workers
   become: true
   roles: [worker]
 
 - name: Setup Cilium & Hubble
-  hosts: master
+  hosts: masters
   become: true
   roles: [cilium]
 
 - name: Setup Tetragon
-  hosts: master
+  hosts: masters
   become: true
   roles: [tetragon]
-
-- name: Manage Cluster
-  hosts: master
-  become: true
-  roles: [manage-cluster]
