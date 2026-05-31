@@ -1,0 +1,99 @@
+# Wazuh deployment values
+# Deploy all components on a dedicated node with taint
+# References: https://opennix.org/en/docs/wazuh/deployment/wazuh-kubernetes-deployment
+
+namespace: wazuh
+
+nodeSelector:
+  role: wazuh
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "wazuh"
+    effect: "NoSchedule"
+
+# Wazuh Indexer (OpenSearch-based)
+indexer:
+  replicas: 1
+  image: wazuh/wazuh-indexer:4.14.3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: local-path
+  env:
+    OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    discovery.type: "single-node"
+    plugins.security.ssl.http.enabled: "true"
+
+# Wazuh Manager
+manager:
+  replicas: 1
+  image: wazuh/wazuh-manager:4.14.3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: local-path
+  # Ports exposed
+  ports:
+    registration: 1515
+    communication: 1514
+    api: 55000
+
+# Wazuh Dashboard
+dashboard:
+  replicas: 1
+  image: wazuh/wazuh-dashboard:4.14.3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  service:
+    type: NodePort
+    port: 443
+    nodePort: 30443
+
+# Wazuh Agent (DaemonSet on workload nodes)
+agent:
+  enabled: true
+  image: wazuh/wazuh-agent:4.14.3
+  # Agent runs on workload nodes, NOT on wazuh node
+  nodeSelector: {}
+  tolerations:
+    - operator: Exists
+  # Exclude wazuh node
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: role
+                operator: NotIn
+                values:
+                  - wazuh
+
+# Credentials
+credentials:
+  indexerAdmin:
+    username: admin
+    password: SecretPassword
+  apiUser:
+    username: wazuh-wui
+    password: MyS3cr3tP4ssw0rd

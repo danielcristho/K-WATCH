@@ -4,405 +4,50 @@ metadata:
   name: ids-syscall-monitoring
 spec:
   kprobes:
+    # I/O operations
     - call: "__x64_sys_read"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
     - call: "__x64_sys_write"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_open"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_close"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
+    # File operations
     - call: "__x64_sys_openat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_execve"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_execveat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_clone"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_clone3"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_fork"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_socket"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_connect"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_accept"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_accept4"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_bind"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_listen"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_sendto"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_recvfrom"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_sendmsg"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_recvmsg"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_mmap"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_mprotect"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_munmap"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_brk"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_madvise"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_kill"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_tkill"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_nanosleep"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_rt_sigaction"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_access"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_stat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_fstat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_lstat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
+    - call: "__x64_sys_close"
+      syscall: true
     - call: "__x64_sys_newfstatat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
+    # Memory management
+    - call: "__x64_sys_mmap"
+      syscall: true
+    - call: "__x64_sys_mprotect"
+      syscall: true
+    - call: "__x64_sys_brk"
+      syscall: true
+    # Network operations
+    - call: "__x64_sys_socket"
+      syscall: true
+    - call: "__x64_sys_connect"
+      syscall: true
+    - call: "__x64_sys_accept"
+      syscall: true
+    - call: "__x64_sys_sendto"
+      syscall: true
+    - call: "__x64_sys_recvfrom"
+      syscall: true
+    # Process management
+    - call: "__x64_sys_clone"
+      syscall: true
+    - call: "__x64_sys_execve"
+      syscall: true
+    - call: "__x64_sys_exit_group"
+      syscall: true
+    - call: "__x64_sys_kill"
+      syscall: true
+    # Timing/scheduling
+    - call: "__x64_sys_nanosleep"
+      syscall: true
+    # I/O control
     - call: "__x64_sys_ioctl"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_fcntl"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_dup"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_dup2"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_pipe"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_pipe2"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_chdir"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_chmod"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_chown"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_unlink"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_unlinkat"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_rename"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_mkdir"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_rmdir"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_getuid"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_setuid"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_getgid"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_setgid"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_ptrace"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_prctl"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_capget"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_capset"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_mount"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_umount2"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_sched_yield"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_epoll_wait"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
     - call: "__x64_sys_epoll_pwait"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_poll"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_ppoll"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_select"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_pselect6"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_wait4"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
-    - call: "__x64_sys_waitid"
-      syscall: false
-      
-      selectors:
-        - matchActions:
-            - action: Post
+      syscall: true
