@@ -1,0 +1,6 @@
+# terraform.tfvars
+# Copy this to terraform.tfvars and fill in your values
+
+aws_region = "us-east-1"       # US East (Virginia)
+key_name   = "your-key-name"   # Your AWS SSH key name
+my_ip      = "0.0.0.0/0"       # Your IP address (change for security)
