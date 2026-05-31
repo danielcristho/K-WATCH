@@ -13,6 +13,9 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "imbalanced-learn>=0.13.0",
     "matplotlib>=3.10.0",
+    "matplotlib-inline>=0.1.7",
     "seaborn>=0.13.0",
-    "kubediagrams>=0.7.0"
+    "kubediagrams>=0.7.0",
+    "notebook>=7.0.0",
+    "ipykernel>=6.29.0",
 ]
