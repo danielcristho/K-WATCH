@@ -13,7 +13,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FEATURE_DIR = os.path.dirname(SCRIPT_DIR)  # feature_engineering/
 RAW_LOGS_DIR = os.path.join(FEATURE_DIR, "raw_logs")
 SESSIONS_DIR = os.path.join(RAW_LOGS_DIR, "sessions")
-KUBECONFIG_PATH = "/mnt/nvme0n1p11/Github/project-kIDS/ansible/kubeconfig"
+KUBECONFIG_PATH = os.path.join(FEATURE_DIR, "..", "config", "kubeconfig")
 
 
 def _set_kubeconfig():
@@ -22,7 +22,7 @@ def _set_kubeconfig():
 
 
 def _run_cmd(cmd, capture=True, timeout=120):
-    """Run a shell command and return output."""
+    """Run a shell command and return output"""
     try:
         result = subprocess.run(
             cmd, shell=True, capture_output=capture, text=True, timeout=timeout
@@ -56,6 +56,10 @@ def check_cluster():
     # Get malicious pods
     out, _, _ = _run_cmd("kubectl -n malicious get pods")
     print(f"\nMalicious Pods:\n{out}")
+    
+    # Get pods from default namespace
+    out, _, _ = _run_cmd("kubectl get pods")
+    print(f"\nCompromise Pods:\n{out}")
 
     # Tetragon and HUbble
     out, _, _ = _run_cmd(
@@ -100,7 +104,7 @@ def pull_logs(sessions=5, interval=300, stimulate=True):
     print(f"Running: {cmd}")
     print()
 
-    # Run the collection script (not captured — stream output to user)
+    # Run the collection script
     rc = subprocess.call(cmd, shell=True)
 
     if rc != 0:

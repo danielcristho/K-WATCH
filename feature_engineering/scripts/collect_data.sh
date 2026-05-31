@@ -12,8 +12,8 @@
 set -euo pipefail
 
 # Constants
-KUBECONFIG_PATH="/mnt/nvme0n1p11/Github/project-kIDS/ansible/kubeconfig"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+KUBECONFIG_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)/config/kubeconfig"
 RAW_LOGS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/raw_logs"
 
 SESSIONS=5
@@ -33,6 +33,28 @@ log_info()  { echo -e "${GREEN}[INFO]${NC}  $(date '+%H:%M:%S') $*"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC}  $(date '+%H:%M:%S') $*"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $(date '+%H:%M:%S') $*"; }
 log_step()  { echo -e "${CYAN}[STEP]${NC}  $(date '+%H:%M:%S') $*"; }
+
+# Retry helper for kubectl
+with_retry() {
+    local max_attempts=3
+    local timeout=5
+    local attempt=1
+    local exitCode=0
+
+    while [ $attempt -le $max_attempts ]; do
+        if "$@"; then
+            return 0
+        fi
+        exitCode=$?
+        log_warn "Command '$*' failed (attempt $attempt/$max_attempts). Retrying in ${timeout}s..."
+        sleep $timeout
+        attempt=$((attempt + 1))
+        timeout=$((timeout * 2))
+    done
+
+    log_error "Command '$*' failed after $max_attempts attempts."
+    return $exitCode
+}
 
 # Parse Arguments
 while [[ $# -gt 0 ]]; do
@@ -129,9 +151,17 @@ stimulate_workloads() {
         kubectl -n benign-workloads run --rm -i --restart=Never \
             stimulator-flask-"$(date +%s)" --image=curlimages/curl -- \
             sh -c "
-                for i in \$(seq 1 20); do
-                    curl -s -o /dev/null -w '%{http_code}' http://flask-todo:5000/ || true
-                    curl -s -X POST http://flask-todo:5000/ -d 'task=test_task_'\$i 2>/dev/null || true
+                for i in \$(seq 1 10); do
+                    # CREATE
+                    curl -s -X POST http://flask-todo:5000/ -d \"content=Task_\"\$i 2>/dev/null || true
+                    # READ
+                    curl -s -o /dev/null http://flask-todo:5000/ || true
+                    # UPDATE (simulating id)
+                    curl -s -X POST http://flask-todo:5000/update/\$i -d \"content=Updated_\"\$i 2>/dev/null || true
+                    # DELETE
+                    if [ \$((i % 2)) -eq 0 ]; then
+                        curl -s -o /dev/null http://flask-todo:5000/delete/\$((i-1)) 2>/dev/null || true
+                    fi
                     sleep 1
                 done
             " &>/dev/null &
@@ -218,6 +248,7 @@ stimulate_workloads() {
     sleep 60
 }
 
+
 #Collect Tetragon Logs
 collect_tetragon() {
     local session_id="$1"
@@ -229,14 +260,17 @@ collect_tetragon() {
     # get log since last interval + buffer
     local since_seconds=$((INTERVAL + 60))
 
-    # Collct from all tetragon pods, merge into single file
-    kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon -o name | while read -r pod; do
+    # Collect from all tetragon pods, merge into single file
+    > "$output_file" # truncate
+    local pods
+    pods=$(with_retry kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon -o name)
+    for pod in $pods; do
         pod_name=$(basename "$pod")
         log_info "  Collecting from $pod_name..."
         kubectl -n kube-system logs "$pod" -c export-stdout \
             --since="${since_seconds}s" \
-            2>/dev/null || true
-    done > "$output_file"
+            2>/dev/null >> "$output_file" || true
+    done
 
     local line_count
     line_count=$(wc -l < "$output_file")
@@ -251,13 +285,19 @@ collect_hubble() {
     log_info "Collecting Hubble logs (session $session_id)..."
 
     # Collect from cillium events.log
-    kubectl -n kube-system get pods -l k8s-app=cilium -o name | head -1 | while read -r pod; do
+    > "$output_file" # truncate
+    local pods
+    pods=$(with_retry kubectl -n kube-system get pods -l k8s-app=cilium -o name)
+    local pod
+    pod=$(echo "$pods" | head -n 1)
+
+    if [ -n "$pod" ]; then
         pod_name=$(basename "$pod")
         log_info "  Collecting from $pod_name..."
         kubectl -n kube-system exec "$pod" -- \
             cat /var/run/cilium/hubble/events.log \
-            2>/dev/null || true
-    done > "$output_file"
+            2>/dev/null >> "$output_file" || true
+    fi
 
     local line_count
     line_count=$(wc -l < "$output_file")
