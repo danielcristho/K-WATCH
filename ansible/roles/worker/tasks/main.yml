@@ -2,7 +2,7 @@
 - name: Configure kubelet node-ip
   ansible.builtin.copy:
     dest: /etc/default/kubelet
-    content: "KUBELET_EXTRA_ARGS=--node-ip={{ wg_worker_ip }}"
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['private_ip'] }}"
 
 - name: Copy join command to worker
   ansible.builtin.copy:
@@ -13,7 +13,7 @@
 - name: Join cluster
   ansible.builtin.shell: |
     if [ ! -f /etc/kubernetes/kubelet.conf ]; then
-      bash /tmp/kubeadm_join_command --node-ip={{ wg_worker_ip }}
+      bash /tmp/kubeadm_join_command
     fi
   changed_when: true
 

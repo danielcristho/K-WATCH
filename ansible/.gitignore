@@ -4,3 +4,4 @@ hosts
 # K8s
 token
 kubeconfig
+kubeadm_join_command

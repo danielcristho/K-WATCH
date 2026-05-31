@@ -14,14 +14,14 @@
 
 - name: Wait for Tetragon to be ready
   ansible.builtin.command:
-    cmd: kubectl rollout status daemonset tetragon -n kube-system --timeout=120s
+    cmd: kubectl rollout status daemonset tetragon -n kube-system --timeout=300s
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
   changed_when: false
 
 - name: Copy TracingPolicy file to Master
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../deploy/tetragon/tracing-policy-ids.yaml"
+    src: "{{ playbook_dir }}/../deployment_charts/tetragon/tracing-policy-ids.yaml"
     dest: /tmp/tracing-policy-ids.yaml
     mode: '0644'
 

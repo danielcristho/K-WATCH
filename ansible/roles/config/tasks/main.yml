@@ -4,8 +4,10 @@
     name: aptitude
     state: latest
     update_cache: true
+    lock_timeout: 300
+    force_apt_get: true
 
-- name: Install some packages
+- name: Install required packages
   ansible.builtin.apt:
     name:
       - net-tools
@@ -27,34 +29,10 @@
       - pkg-config
       - re2c
       - wget
+      - git
+      - vim
+      - htop
     state: present
     update_cache: true
-
-- name: Check if Rust is installed
-  ansible.builtin.command: $HOME/.cargo/bin/cargo --version
-  register: cargo_check
-  ignore_errors: true
-  changed_when: false
-  become: true
-  become_user: agent007
-
-- name: Install Rustup
-  ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  become: true
-  become_user: agent007
-  when: cargo_check.rc != 0
-
-- name: Install justfile via cargo
-  ansible.builtin.shell: $HOME/.cargo/bin/cargo install just
-  become: true
-  become_user: agent007
-  args:
-    creates: $HOME/.cargo/bin/just
-
-- name: Add cargo bin to PATH for agent007
-  ansible.builtin.lineinfile:
-    path: $HOME/.bashrc
-    line: 'export PATH="$HOME/.cargo/bin:$PATH"'
-    state: present
-  become: true
-  become_user: agent007
+    lock_timeout: 300
+    force_apt_get: true
