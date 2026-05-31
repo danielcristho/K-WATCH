@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wazuh-manager
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wazuh-manager
+spec:
+  serviceName: wazuh-manager
+  replicas: {{ .Values.manager.replicas }}
+  selector:
+    matchLabels:
+      app: wazuh-manager
+  template:
+    metadata:
+      labels:
+        app: wazuh-manager
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: wazuh-manager
+          image: {{ .Values.manager.image }}
+          resources:
+            {{- toYaml .Values.manager.resources | nindent 12 }}
+          env:
+            - name: INDEXER_URL
+              value: "https://wazuh-indexer:9200"
+            - name: INDEXER_USERNAME
+              value: {{ .Values.credentials.indexerAdmin.username }}
+            - name: INDEXER_PASSWORD
+              value: {{ .Values.credentials.indexerAdmin.password }}
+            - name: FILEBEAT_SSL_VERIFICATION_MODE
+              value: "none"
+            - name: API_USERNAME
+              value: {{ .Values.credentials.apiUser.username }}
+            - name: API_PASSWORD
+              value: {{ .Values.credentials.apiUser.password }}
+          ports:
+            - containerPort: {{ .Values.manager.ports.registration }}
+              name: registration
+            - containerPort: {{ .Values.manager.ports.communication }}
+              name: communication
+            - containerPort: {{ .Values.manager.ports.api }}
+              name: api
+          volumeMounts:
+            - name: manager-data
+              mountPath: /var/ossec/data
+            - name: manager-certs
+              mountPath: /etc/ssl/certs/wazuh
+              readOnly: true
+      volumes:
+        - name: manager-certs
+          secret:
+            secretName: manager-certs
+  volumeClaimTemplates:
+    - metadata:
+        name: manager-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.manager.persistence.storageClass }}
+        storageClassName: {{ .Values.manager.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.manager.persistence.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-manager
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wazuh-manager
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.manager.ports.registration }}
+      targetPort: {{ .Values.manager.ports.registration }}
+      name: registration
+    - port: {{ .Values.manager.ports.communication }}
+      targetPort: {{ .Values.manager.ports.communication }}
+      name: communication
+    - port: {{ .Values.manager.ports.api }}
+      targetPort: {{ .Values.manager.ports.api }}
+      name: api
+  selector:
+    app: wazuh-manager

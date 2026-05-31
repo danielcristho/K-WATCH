@@ -1,0 +1,6 @@
+apiVersion: v2
+name: wazuh
+description: Wazuh SIEM deployment for K-IDS research project
+type: application
+version: 1.0.0
+appVersion: "4.14.3"

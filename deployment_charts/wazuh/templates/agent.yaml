@@ -1,0 +1,52 @@
+{{- if .Values.agent.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wazuh-agent
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wazuh-agent
+spec:
+  selector:
+    matchLabels:
+      app: wazuh-agent
+  template:
+    metadata:
+      labels:
+        app: wazuh-agent
+    spec:
+      {{- with .Values.agent.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.agent.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: wazuh-agent
+          image: {{ .Values.agent.image }}
+          env:
+            - name: WAZUH_MANAGER
+              value: "wazuh-manager.{{ .Values.namespace }}.svc.cluster.local"
+            - name: WAZUH_AGENT_GROUP
+              value: "kubernetes"
+          volumeMounts:
+            - name: host-var-log
+              mountPath: /var/log
+              readOnly: true
+            - name: host-run-containerd
+              mountPath: /run/containerd
+              readOnly: true
+          securityContext:
+            privileged: true
+      volumes:
+        - name: host-var-log
+          hostPath:
+            path: /var/log
+        - name: host-run-containerd
+          hostPath:
+            path: /run/containerd
+      hostNetwork: true
+      hostPID: true
+{{- end }}

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-dashboard
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wazuh-dashboard
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: wazuh-dashboard
+  template:
+    metadata:
+      labels:
+        app: wazuh-dashboard
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: wazuh-dashboard
+          image: {{ .Values.dashboard.image }}
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}
+          env:
+            - name: INDEXER_URL
+              value: "https://wazuh-indexer:9200"
+            - name: INDEXER_USERNAME
+              value: {{ .Values.credentials.indexerAdmin.username }}
+            - name: INDEXER_PASSWORD
+              value: {{ .Values.credentials.indexerAdmin.password }}
+            - name: WAZUH_API_URL
+              value: "https://wazuh-manager"
+            - name: API_USERNAME
+              value: {{ .Values.credentials.apiUser.username }}
+            - name: API_PASSWORD
+              value: {{ .Values.credentials.apiUser.password }}
+            - name: SERVER_SSL_ENABLED
+              value: "true"
+          ports:
+            - containerPort: 5601
+              name: dashboard
+          volumeMounts:
+            - name: dashboard-certs
+              mountPath: /usr/share/wazuh-dashboard/certs
+              readOnly: true
+      volumes:
+        - name: dashboard-certs
+          secret:
+            secretName: dashboard-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-dashboard
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: wazuh-dashboard
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  ports:
+    - port: {{ .Values.dashboard.service.port }}
+      targetPort: 5601
+      {{- if eq .Values.dashboard.service.type "NodePort" }}
+      nodePort: {{ .Values.dashboard.service.nodePort }}
+      {{- end }}
+      name: dashboard
+  selector:
+    app: wazuh-dashboard
