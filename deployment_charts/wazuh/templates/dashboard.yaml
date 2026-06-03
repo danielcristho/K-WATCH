@@ -32,9 +32,9 @@ spec:
             - name: INDEXER_URL
               value: "https://wazuh-indexer:9200"
             - name: INDEXER_USERNAME
-              value: {{ .Values.credentials.indexerAdmin.username }}
+              value: admin
             - name: INDEXER_PASSWORD
-              value: {{ .Values.credentials.indexerAdmin.password }}
+              value: admin
             - name: WAZUH_API_URL
               value: "https://wazuh-manager"
             - name: API_USERNAME
@@ -42,18 +42,19 @@ spec:
             - name: API_PASSWORD
               value: {{ .Values.credentials.apiUser.password }}
             - name: SERVER_SSL_ENABLED
-              value: "true"
+              value: "false"
           ports:
             - containerPort: 5601
               name: dashboard
           volumeMounts:
-            - name: dashboard-certs
-              mountPath: /usr/share/wazuh-dashboard/certs
+            - name: dashboard-config
+              mountPath: /usr/share/wazuh-dashboard/config/opensearch_dashboards.yml
+              subPath: opensearch_dashboards.yml
               readOnly: true
       volumes:
-        - name: dashboard-certs
-          secret:
-            secretName: dashboard-certs
+        - name: dashboard-config
+          configMap:
+            name: wazuh-dashboard-config
 ---
 apiVersion: v1
 kind: Service

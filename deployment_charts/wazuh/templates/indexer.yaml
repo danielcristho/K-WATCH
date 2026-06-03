@@ -40,8 +40,8 @@ spec:
               value: {{ .Values.indexer.env.OPENSEARCH_JAVA_OPTS | quote }}
             - name: discovery.type
               value: {{ index .Values.indexer.env "discovery.type" | quote }}
-            - name: plugins.security.ssl.http.enabled
-              value: {{ index .Values.indexer.env "plugins.security.ssl.http.enabled" | quote }}
+            - name: DISABLE_SECURITY_PLUGIN
+              value: "true"
             - name: INDEXER_USERNAME
               value: {{ .Values.credentials.indexerAdmin.username }}
             - name: INDEXER_PASSWORD
@@ -54,13 +54,20 @@ spec:
           volumeMounts:
             - name: indexer-data
               mountPath: /var/lib/wazuh-indexer
+            - name: indexer-config
+              mountPath: /usr/share/wazuh-indexer/config/opensearch.yml
+              subPath: opensearch.yml
             - name: indexer-certs
-              mountPath: /usr/share/wazuh-indexer/certs
+              mountPath: /usr/share/wazuh-indexer/config/certs
               readOnly: true
       volumes:
+        - name: indexer-config
+          configMap:
+            name: wazuh-indexer-config
         - name: indexer-certs
           secret:
             secretName: indexer-certs
+            defaultMode: 0444
   volumeClaimTemplates:
     - metadata:
         name: indexer-data

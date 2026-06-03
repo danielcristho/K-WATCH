@@ -1,3 +1,4 @@
+# Web Serving deployment
 {{- if .Values.webServing.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -14,6 +15,14 @@ spec:
         app: web-serving-db
         kids-label: "0"
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: db
         image: cloudsuite/web-serving:db_server
@@ -52,6 +61,14 @@ spec:
         app: web-serving-app
         kids-label: "0"
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: app
         image: cloudsuite/web-serving:web_server

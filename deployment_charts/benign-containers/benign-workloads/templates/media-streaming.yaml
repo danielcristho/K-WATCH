@@ -1,3 +1,4 @@
+# Media Streaming deployment
 {{- if .Values.mediaStreaming.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -14,6 +15,14 @@ spec:
         app: media-streaming
         kids-label: "0"
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: server
         image: cloudsuite/media-streaming:server

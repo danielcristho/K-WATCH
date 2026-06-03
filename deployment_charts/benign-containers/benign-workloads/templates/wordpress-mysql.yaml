@@ -1,3 +1,4 @@
+# WordPress with MySQL deployment
 {{- if .Values.wordpressMysql.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -14,6 +15,14 @@ spec:
         app: wordpress-mysql
         kids-label: "0"
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: mysql
           image: "mysql:8.0"
@@ -61,6 +70,14 @@ spec:
         app: wordpress-app
         kids-label: "0"
     spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: wordpress
           image: "wordpress:latest"

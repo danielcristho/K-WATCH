@@ -1,5 +1,14 @@
 fullnameOverride: "malicious-containers"
 
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "worker"
+    effect: "NoSchedule"
+
 # Binary Label 1: Malicious
 mirai:
   enabled: true
