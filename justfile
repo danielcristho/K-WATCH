@@ -1,4 +1,4 @@
-# K-IDS - Task Runner
+# K-IDS - Just Recipes
 # Run tasks with: just <task-name>
 
 # Display all available commands
@@ -16,7 +16,7 @@ ansible-ping:
 export KUBECONFIG := "ansible/kubeconfig"
 
 # Deploy malicious containers
-malicious:
+malicious-deploy:
     kubectl create namespace malicious --dry-run=client -o yaml | kubectl apply --validate=false -f -
     helm upgrade --install malicious ./deployment_charts/malicious-containers -n malicious
 
@@ -24,6 +24,10 @@ malicious:
 malicious-clean:
     helm uninstall malicious -n malicious || true
     kubectl delete namespace malicious --ignore-not-found
+
+# Deploy Compromise containers
+compromise-deploy:
+    kubectl apply -f deployment_charts/compromised-pods/compromised-deployments.yaml
 
 # Port-forward Hubble Relay & Hubble UI
 forward-svc:
@@ -84,15 +88,17 @@ destroy:
 
 # Prepare wazuh dedicated node (run after node joins cluster)
 wazuh-prepare-node node:
-    kubectl taint nodes {{node}} dedicated=wazuh:NoSchedule --overwrite
-    kubectl label nodes {{node}} role=wazuh --overwrite
+    kubectl taint nodes {{node}} role=siem:NoSchedule --overwrite
+    kubectl label nodes {{node}} node-role.kubernetes.io/siem="" --overwrite
     @echo "Node {{node}} prepared for Wazuh deployment"
 
 # Install local-path provisioner for PVCs
 wazuh-storage:
     kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+    kubectl -n local-path-storage patch deployment local-path-provisioner --type=json -p='[{"op":"add","path":"/spec/template/spec/tolerations","value":[{"operator":"Exists"}]}]'
     @echo "Waiting for local-path provisioner..."
-    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=local-path-provisioner -n local-path-storage --timeout=60s
+    kubectl wait --for=condition=ready pod -l app=local-path-provisioner -n local-path-storage --timeout=120s
 
 # Generate Wazuh TLS certificates
 wazuh-certs:
@@ -119,6 +125,10 @@ wazuh-secrets:
         --from-file=deployment_charts/wazuh/certs/dashboard-key.pem \
         --dry-run=client -o yaml | kubectl apply -f -
     @echo "Wazuh secrets created"
+
+# View Wazuh Manager logs
+wazuh-logs:
+    kubectl -n wazuh logs -l app=wazuh-manager --tail=50
 
 # Deploy Wazuh (full setup: storage + certs + secrets + helm install)
 wazuh-deploy:
@@ -152,16 +162,37 @@ wazuh-dashboard:
     @echo "Login: admin / SecretPassword"
     kubectl -n wazuh port-forward svc/wazuh-dashboard 5601:443 --address 0.0.0.0
 
+# Initialize Wazuh Indexer security (run once after fresh deploy)
+wazuh-init-security:
+    @echo "Waiting for indexer to be ready..."
+    kubectl -n wazuh wait --for=condition=ready pod/wazuh-indexer-0 --timeout=120s
+    kubectl exec -n wazuh wazuh-indexer-0 -- bash -c '\
+      export JAVA_HOME=/usr/share/wazuh-indexer/jdk && \
+      /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh \
+        -cd /usr/share/wazuh-indexer/config/opensearch-security/ \
+        -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem \
+        -cert /usr/share/wazuh-indexer/config/certs/admin.pem \
+        -key /usr/share/wazuh-indexer/config/certs/admin-key.pem \
+        -h localhost -nhnv'
+    kubectl -n wazuh delete pod -l app=wazuh-dashboard
+    @echo "Security initialized. Login: admin / admin"
+
 # Check Wazuh Indexer health
 wazuh-health:
     kubectl -n wazuh exec -it wazuh-indexer-0 -- \
-        curl -sk -u admin:SecretPassword https://localhost:9200/_cluster/health?pretty
+        curl -sk -u admin:admin https://localhost:9200/_cluster/health?pretty
 
-# View Wazuh Manager logs
-wazuh-logs:
-    kubectl -n wazuh logs -l app=wazuh-manager --tail=50
-
-# Full Wazuh setup (prepare node + deploy)
-wazuh-setup node:
-    just wazuh-prepare-node {{node}}
+# Deploy everything (wazuh + benign + malicious)
+deploy-all:
     just wazuh-deploy
+    just benign-deploy
+    just malicious
+    @echo "=== All deployments complete ==="
+    kubectl get pods -A
+
+# Clean everything
+clean-all:
+    just wazuh-clean
+    just benign-clean
+    just malicious-clean
+    @echo "=== All deployments removed ==="
