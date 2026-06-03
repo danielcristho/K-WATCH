@@ -33,3 +33,21 @@
   hosts: masters
   become: true
   roles: [tetragon]
+
+- name: Apply Node Labels & Taints
+  hosts: masters
+  become: true
+  tasks:
+    - name: Label and taint k8s-worker
+      ansible.builtin.shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        kubectl label node k8s-worker-1 node-role.kubernetes.io/worker="" --overwrite
+        kubectl taint node k8s-worker-1 role=worker:NoSchedule --overwrite
+      changed_when: true
+
+    - name: Label and taint k8s-siem
+      ansible.builtin.shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        kubectl label node siem node-role.kubernetes.io/siem="" --overwrite
+        kubectl taint node siem role=siem:NoSchedule --overwrite
+      changed_when: true

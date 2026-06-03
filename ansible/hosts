@@ -4,10 +4,11 @@ ansible_ssh_private_key_file=/mnt/nvme0n1p11/Github/project-kIDS/terraform/danie
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 
 [masters]
-k8s-master ansible_host=18.233.61.187 private_ip=10.0.1.158
+k8s-master ansible_host=18.233.61.187 private_ip=10.0.1.27
 
 [workers]
-k8s-worker-1 ansible_host=3.238.103.191 private_ip=10.0.1.32
+k8s-worker ansible_host=44.195.46.52 private_ip=10.0.1.224
+k8s-siem ansible_host=52.2.50.34 private_ip=10.0.1.142
 
 [k8s_cluster:children]
 masters

@@ -13,7 +13,7 @@
 - name: Join cluster
   ansible.builtin.shell: |
     if [ ! -f /etc/kubernetes/kubelet.conf ]; then
-      bash /tmp/kubeadm_join_command
+      bash /tmp/kubeadm_join_command --node-name {{ inventory_hostname }}
     fi
   changed_when: true
 
