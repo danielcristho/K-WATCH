@@ -1,4 +1,14 @@
 # Binary Label 0: Benign
+
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "worker"
+    effect: "NoSchedule"
+
 dataCaching:
   enabled: true
   label: 0

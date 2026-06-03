@@ -41,6 +41,14 @@ spec:
         kids-label: "1"
     spec:
       serviceAccountName: stratus-attacker
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: stratus
           image: {{ .Values.stratus.image }}

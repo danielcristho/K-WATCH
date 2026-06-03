@@ -5,12 +5,12 @@
 namespace: wazuh
 
 nodeSelector:
-  role: wazuh
+  node-role.kubernetes.io/siem: ""
 
 tolerations:
-  - key: "dedicated"
+  - key: "role"
     operator: "Equal"
-    value: "wazuh"
+    value: "siem"
     effect: "NoSchedule"
 
 # Wazuh Indexer (OpenSearch-based)
@@ -67,7 +67,7 @@ dashboard:
       memory: 1Gi
   service:
     type: NodePort
-    port: 443
+    port: 5601
     nodePort: 30443
 
 # Wazuh Agent (DaemonSet on workload nodes)
@@ -78,16 +78,8 @@ agent:
   nodeSelector: {}
   tolerations:
     - operator: Exists
-  # Exclude wazuh node
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: role
-                operator: NotIn
-                values:
-                  - wazuh
+  # Run on all nodes
+  affinity: {}
 
 # Credentials
 credentials:
@@ -96,4 +88,4 @@ credentials:
     password: SecretPassword
   apiUser:
     username: wazuh-wui
-    password: MyS3cr3tP4ssw0rd
+    password: W4zuh.Admin!2024#Sec

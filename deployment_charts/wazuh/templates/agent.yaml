@@ -27,10 +27,18 @@ spec:
         - name: wazuh-agent
           image: {{ .Values.agent.image }}
           env:
-            - name: WAZUH_MANAGER
+            - name: JOIN_MANAGER_IP
               value: "wazuh-manager.{{ .Values.namespace }}.svc.cluster.local"
-            - name: WAZUH_AGENT_GROUP
-              value: "kubernetes"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              sed -i "s|CHANGE_MANAGER_IP|${JOIN_MANAGER_IP}|g" /var/ossec/etc/ossec.conf
+              sed -i "s|CHANGE_MANAGER_PORT|1514|g" /var/ossec/etc/ossec.conf
+              sed -i "s|CHANGE_ENROLL_IP|${JOIN_MANAGER_IP}|g" /var/ossec/etc/ossec.conf
+              sed -i "s|CHANGE_ENROLL_PORT|1515|g" /var/ossec/etc/ossec.conf
+              sed -i "s|CHANGE_AGENT_NAME|$(cat /etc/hostname 2>/dev/null || echo node-$$)|g" /var/ossec/etc/ossec.conf
+              /var/ossec/bin/wazuh-control start
+              tail -f /var/ossec/logs/ossec.log
           volumeMounts:
             - name: host-var-log
               mountPath: /var/log
@@ -49,4 +57,5 @@ spec:
             path: /run/containerd
       hostNetwork: true
       hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
 {{- end }}

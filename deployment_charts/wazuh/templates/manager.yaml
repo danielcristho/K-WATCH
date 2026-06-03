@@ -33,9 +33,9 @@ spec:
             - name: INDEXER_URL
               value: "https://wazuh-indexer:9200"
             - name: INDEXER_USERNAME
-              value: {{ .Values.credentials.indexerAdmin.username }}
+              value: admin
             - name: INDEXER_PASSWORD
-              value: {{ .Values.credentials.indexerAdmin.password }}
+              value: admin
             - name: FILEBEAT_SSL_VERIFICATION_MODE
               value: "none"
             - name: API_USERNAME
