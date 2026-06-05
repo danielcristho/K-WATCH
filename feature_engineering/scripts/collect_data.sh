@@ -124,13 +124,19 @@ preflight_check() {
         echo "    $line"
     done
 
+    echo -e "${YELLOW}  Default namespace:${NC}"
+    kubectl -n default get pods --no-headers 2>/dev/null | grep -v "^$" | while read -r line; do
+        echo "    $line"
+    done
+
     echo ""
 
     # Count active pods per namespace
     BENIGN_RUNNING=$(kubectl -n benign-workloads get pods --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
     MALICIOUS_RUNNING=$(kubectl -n malicious get pods --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+    DEFAULT_RUNNING=$(kubectl -n default get pods --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
 
-    log_info "Running pods - Benign: $BENIGN_RUNNING, Malicious: $MALICIOUS_RUNNING"
+    log_info "Running pods - Benign: $BENIGN_RUNNING, Malicious: $MALICIOUS_RUNNING, Default: $DEFAULT_RUNNING"
 
     if [ "$BENIGN_RUNNING" -lt 3 ]; then
         log_warn "Very few benign pods running. Data diversity will be limited."
@@ -284,20 +290,19 @@ collect_hubble() {
 
     log_info "Collecting Hubble logs (session $session_id)..."
 
-    # Collect from cillium events.log
+    # Collect from all Cilium agents. Hubble export files are local to each
+    # agent pod, so reading only one pod can miss flows from other nodes.
     > "$output_file" # truncate
     local pods
     pods=$(with_retry kubectl -n kube-system get pods -l k8s-app=cilium -o name)
     local pod
-    pod=$(echo "$pods" | head -n 1)
-
-    if [ -n "$pod" ]; then
+    for pod in $pods; do
         pod_name=$(basename "$pod")
         log_info "  Collecting from $pod_name..."
-        kubectl -n kube-system exec "$pod" -- \
-            cat /var/run/cilium/hubble/events.log \
-            2>/dev/null >> "$output_file" || true
-    fi
+        kubectl -n kube-system exec "$pod" -- sh -c \
+            'cat /var/run/cilium/hubble/kwatch-workloads*.log 2>/dev/null' \
+            >> "$output_file" 2>/dev/null || true
+    done
 
     local line_count
     line_count=$(wc -l < "$output_file")
