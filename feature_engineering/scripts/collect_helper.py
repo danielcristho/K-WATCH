@@ -127,12 +127,24 @@ def pull_logs_single():
     tetragon_file = os.path.join(RAW_LOGS_DIR, "tetragon.json")
     hubble_file = os.path.join(RAW_LOGS_DIR, "hubble.json")
 
-    print("Pulling Hubble logs...")
-    _run_cmd(
-        f"kubectl -n kube-system exec ds/cilium -- "
-        f"cat /var/run/cilium/hubble/events.log > {hubble_file}",
-        capture=False, timeout=300
+    print("Pulling Hubble logs from all Cilium agents...")
+    pods_out, _, _ = _run_cmd(
+        "kubectl -n kube-system get pods -l k8s-app=cilium "
+        "-o jsonpath='{.items[*].metadata.name}'"
     )
+    cilium_pods = pods_out.strip("'").split()
+
+    with open(hubble_file, "w") as f:
+        for pod in cilium_pods:
+            print(f"  Collecting from {pod}...")
+            out, _, _ = _run_cmd(
+                f"kubectl -n kube-system exec {pod} -- sh -c "
+                "'find /var/run/cilium/hubble -maxdepth 1 -type f "
+                "-name \"*.log\" -exec cat {} + 2>/dev/null'",
+                timeout=300
+            )
+            if out:
+                f.write(out + "\n")
 
     print("Pulling Tetragon logs (ALL from export-stdout, not --tail limited)...")
     # Collect dari semua tetragon pods, container export-stdout
