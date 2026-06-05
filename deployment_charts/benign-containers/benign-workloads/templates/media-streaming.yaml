@@ -25,14 +25,24 @@ spec:
       {{- end }}
       containers:
       - name: server
-        image: cloudsuite/media-streaming:server
+        image: nginx:alpine
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "Starting media streaming simulation..."
+            # Create dummy media content
+            mkdir -p /usr/share/nginx/html/media
+            dd if=/dev/urandom of=/usr/share/nginx/html/media/video1.bin bs=1M count=5 2>/dev/null
+            dd if=/dev/urandom of=/usr/share/nginx/html/media/video2.bin bs=1M count=3 2>/dev/null
+            dd if=/dev/urandom of=/usr/share/nginx/html/media/audio1.bin bs=512K count=4 2>/dev/null
+            nginx -g 'daemon off;'
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 50m
+            memory: 64Mi
           limits:
-            cpu: 250m
-            memory: 256Mi
+            cpu: 150m
+            memory: 128Mi
         ports:
         - containerPort: 80
 ---

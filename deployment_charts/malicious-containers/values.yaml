@@ -12,9 +12,9 @@ tolerations:
 # Binary Label 1: Malicious
 mirai:
   enabled: true
-  image: mitjclinic/mirai:v0.0.1-alpha
+  image: alpine:latest
   interval: 60
-  commandOverride: false
+  commandOverride: true
   label: 1
 
 miner:
@@ -43,6 +43,7 @@ kinsing:
   image: alpine:latest
   commandOverride: true
   label: 1
+
 stratus:
   enabled: true
   image: alpine:latest

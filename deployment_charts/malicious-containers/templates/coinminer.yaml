@@ -1,4 +1,5 @@
-{{- if .Values.coinminer.enabled -}}
+# Miner Deployment
+{{- if .Values.coinminer.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,6 +49,7 @@ spec:
                 dd if=/dev/zero of=/dev/null bs=1M count=200 2>/dev/null &
                 openssl speed -multi 2 2>/dev/null &
                 
+                # Reference: https://www.cryptocompare.com/mining/pools/minexmr/
                 echo "[$(date)] Network connection to mining pool..."
                 nc -zv -w 1 pool.minexmr.com 4444 2>&1 || true
                 nc -zv -w 1 xmr-eu1.nanopool.org 14444 2>&1 || true
