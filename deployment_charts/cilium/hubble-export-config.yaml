@@ -4,24 +4,35 @@ metadata:
   name: cilium-hubble-export-config
   namespace: kube-system
 data:
-  default-namespace.json: |
-    {
-      "filePath": "/var/run/cilium/hubble/default-namespace.log",
-      "fileMaxSizeMb": 50,
-      "fileMaxBackups": 2,
-      "includeFilters": [
-        {"source_namespace": ["default"]},
-        {"destination_namespace": ["default"]}
-      ],
-      "fieldMask": [
-        "time",
-        "source.namespace",
-        "source.pod_name",
-        "destination.namespace",
-        "destination.pod_name",
-        "destination.port",
-        "verdict",
-        "l4",
-        "Type"
-      ]
-    }
+  flowlogs.yaml: |
+    flowLogs:
+    - name: all
+      filePath: /var/run/cilium/hubble/events.log
+      fileMaxSizeMb: 10
+      fileMaxBackups: 5
+      includeFilters: []
+      excludeFilters: []
+      fieldMask: []
+    - name: kwatch-workloads
+      filePath: /var/run/cilium/hubble/kwatch-workloads.log
+      fileMaxSizeMb: 200
+      fileMaxBackups: 10
+      includeFilters:
+      - source_label:
+        - "k8s:io.kubernetes.pod.namespace=default"
+        - "k8s:io.kubernetes.pod.namespace=malicious"
+        - "k8s:io.kubernetes.pod.namespace=benign-workloads"
+      - destination_label:
+        - "k8s:io.kubernetes.pod.namespace=default"
+        - "k8s:io.kubernetes.pod.namespace=malicious"
+        - "k8s:io.kubernetes.pod.namespace=benign-workloads"
+      excludeFilters: []
+      fieldMask:
+      - time
+      - traffic_direction
+      - source
+      - destination
+      - verdict
+      - is_reply
+      - l4
+      - Type

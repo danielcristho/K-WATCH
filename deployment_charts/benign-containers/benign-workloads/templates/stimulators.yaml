@@ -1,0 +1,207 @@
+{{- if .Values.dataCaching.enabled }}
+# Memcached stimulator - generates continuous read/write traffic to memcached
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memcached-stimulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memcached-stimulator
+  template:
+    metadata:
+      labels:
+        app: memcached-stimulator
+        kids-label: "0"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: stimulator
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            apk add --no-cache busybox-extras
+            echo "Starting memcached stimulator..."
+            while true; do
+              for i in $(seq 1 20); do
+                echo -e "set key_$i 0 300 10\r\nvalue_${i}_x\r" | nc -w 1 memcached-service 11211 || true
+              done
+              for i in $(seq 1 20); do
+                echo -e "get key_$i\r" | nc -w 1 memcached-service 11211 || true
+              done
+              echo -e "stats\r" | nc -w 1 memcached-service 11211 || true
+              sleep 5
+            done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+{{- end }}
+---
+{{- if .Values.mariadbSysbench.enabled }}
+# MariaDB stimulator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb-stimulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb-stimulator
+  template:
+    metadata:
+      labels:
+        app: mariadb-stimulator
+        kids-label: "0"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: stimulator
+        image: mariadb:10.6
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            sleep 15
+            mysql -h mariadb-sysbench-service -u root -pkids_password ids_test -e "
+              CREATE TABLE IF NOT EXISTS stimulator_data (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                data VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              );" 2>/dev/null || true
+            while true; do
+              for i in $(seq 1 10); do
+                mysql -h mariadb-sysbench-service -u root -pkids_password ids_test -e "
+                  INSERT INTO stimulator_data (data) VALUES ('record_$(date +%s)_$i');" 2>/dev/null || true
+              done
+              mysql -h mariadb-sysbench-service -u root -pkids_password ids_test -e "
+                SELECT * FROM stimulator_data ORDER BY id DESC LIMIT 20;" 2>/dev/null || true
+              mysql -h mariadb-sysbench-service -u root -pkids_password ids_test -e "
+                DELETE FROM stimulator_data WHERE id < (SELECT id FROM (SELECT id FROM stimulator_data ORDER BY id DESC LIMIT 1 OFFSET 100) AS t);" 2>/dev/null || true
+              sleep 10
+            done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+{{- end }}
+---
+{{- if .Values.mediaStreaming.enabled }}
+# Media streaming stimulator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-stimulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-stimulator
+  template:
+    metadata:
+      labels:
+        app: media-stimulator
+        kids-label: "0"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: stimulator
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            apk add --no-cache curl
+            echo "Starting media streaming stimulator..."
+            while true; do
+              curl -s -o /dev/null http://media-service/media/video1.bin || true
+              curl -s -o /dev/null http://media-service/media/video2.bin || true
+              curl -s -o /dev/null http://media-service/media/audio1.bin || true
+              curl -s -o /dev/null http://media-service/ || true
+              sleep 8
+            done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+{{- end }}
+---
+{{- if .Values.webServing.enabled }}
+# Web serving stimulator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-serving-stimulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-serving-stimulator
+  template:
+    metadata:
+      labels:
+        app: web-serving-stimulator
+        kids-label: "0"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: stimulator
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            apk add --no-cache curl
+            echo "Starting web serving stimulator..."
+            while true; do
+              curl -s -o /dev/null http://web-service/ || true
+              curl -s -o /dev/null http://web-service/index.html || true
+              curl -s -o /dev/null http://wordpress-app/ || true
+              curl -s -o /dev/null http://flask-todo:5000/ || true
+              sleep 5
+            done
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+{{- end }}

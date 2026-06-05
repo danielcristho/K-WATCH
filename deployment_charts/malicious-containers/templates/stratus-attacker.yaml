@@ -1,4 +1,5 @@
-{{- if .Values.stratus.enabled -}}
+# Stratus Red Team Deployment
+{{- if .Values.stratus.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
