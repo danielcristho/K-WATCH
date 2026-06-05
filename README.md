@@ -26,5 +26,5 @@ Dataset (CSV/Parquet)
         ↓
 Train Decision Tree
         ↓
-Alert → Wazuh + ELK (SIEM)
+Alert → Wazuh (SIEM)
 ```
