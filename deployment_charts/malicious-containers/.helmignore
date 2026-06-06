@@ -21,3 +21,6 @@
 .idea/
 *.tmproj
 .vscode/
+
+# Templates exclude
+kinsing.yaml

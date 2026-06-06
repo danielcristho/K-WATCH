@@ -1,4 +1,4 @@
-fullnameOverride: "malicious-containers"
+fullnameOverride: "malicious"
 
 nodeSelector:
   node-role.kubernetes.io/worker: ""
@@ -38,13 +38,18 @@ coinminer:
   commandOverride: true
   label: 1
 
-kinsing:
-  enabled: true
-  image: alpine:latest
-  commandOverride: true
-  label: 1
+# kinsing:
+#   enabled: true
+#   image: alpine:latest
+#   commandOverride: true
+#   label: 1
 
 stratus:
   enabled: true
   image: alpine:latest
+  label: 1
+
+bruteforce:
+  enabled: true
+  image: vanhauser/hydra:latest
   label: 1

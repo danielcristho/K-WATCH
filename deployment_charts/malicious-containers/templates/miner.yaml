@@ -34,14 +34,18 @@ spec:
           image: {{ .Values.miner.xmrig.image }}
           resources:
             requests:
-              cpu: "500m"
+              cpu: 50m
+              memory: 64Mi
             limits:
-              cpu: "1000m"
+              cpu: 200m
+              memory: 128Mi
         - name: xmr-stak
           image: {{ .Values.miner.xmrStak.image }}
           resources:
             requests:
-              cpu: "500m"
+              cpu: 50m
+              memory: 64Mi
             limits:
-              cpu: "1000m"
+              cpu: 200m
+              memory: 128Mi
 {{- end }}
