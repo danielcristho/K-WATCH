@@ -20,6 +20,7 @@ mariadbSysbench:
 mediaStreaming:
   enabled: true
   label: 0
+  description: "Redis in-memory store"
 
 webServing:
   enabled: true
