@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k-watch
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k-watch-config
+  namespace: k-watch
+data:
+  TETRAGON_LOG: /var/run/tetragon/tetragon.log
+  HUBBLE_LOG: /var/run/cilium/hubble/kwatch-workloads.log
+  MODEL_DIR: /models
+  ALERT_LOG: /var/log/k-ids/alerts.json
+  POLL_INTERVAL: "60"
+  NGRAM_SIZE: "5"
+  BENIGN_LABELS: "6,7,8,9"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k-watch-detector-script
+  namespace: k-watch
+data:
+  detect.py: |
+    # Mounted from detector/detect.py via kustomize or manual apply
+    # Replace this with actual script content or mount via hostPath
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: k-watch-detector
+  namespace: k-watch
+  labels:
+    app: k-watch-detector
+spec:
+  selector:
+    matchLabels:
+      app: k-watch-detector
+  template:
+    metadata:
+      labels:
+        app: k-watch-detector
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+      tolerations:
+        - key: role
+          operator: Equal
+          value: worker
+          effect: NoSchedule
+      containers:
+        - name: detector
+          image: python:3.13-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip install -q "scikit-learn==1.8.0" joblib pandas numpy loguru python-dotenv rich
+              python /app/detect.py
+          envFrom:
+            - configMapRef:
+                name: k-watch-config
+          volumeMounts:
+            - name: detector-script
+              mountPath: /app
+            - name: models
+              mountPath: /models
+              readOnly: true
+            - name: tetragon-log
+              mountPath: /var/run/tetragon
+              readOnly: true
+            - name: hubble-log
+              mountPath: /var/run/cilium/hubble
+              readOnly: true
+            - name: alert-log
+              mountPath: /var/log/k-ids
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: detector-script
+          hostPath:
+            path: /opt/k-watch
+        - name: models
+          hostPath:
+            path: /opt/k-watch/models
+        - name: tetragon-log
+          hostPath:
+            path: /var/run/tetragon
+        - name: hubble-log
+          hostPath:
+            path: /var/run/cilium/hubble
+        - name: alert-log
+          hostPath:
+            path: /var/log/k-ids
