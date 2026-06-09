@@ -1,0 +1,77 @@
+<group name="kwatch,ids,kubernetes">
+
+  <!-- Base rule: any K-Watch alert -->
+  <rule id="100100" level="3">
+    <decoded_as>kwatch</decoded_as>
+    <description>K-Watch: Runtime detection event from pod $(json.pod_name)</description>
+    <group>kwatch</group>
+  </rule>
+
+  <!-- Benign pod detected (info) -->
+  <rule id="100101" level="3">
+    <if_sid>100100</if_sid>
+    <field name="json.binary_result">benign</field>
+    <description>K-Watch: Benign activity from pod $(json.pod_name) in $(json.namespace)</description>
+    <group>kwatch,benign</group>
+  </rule>
+
+  <!-- Malicious pod detected (high) -->
+  <rule id="100102" level="12">
+    <if_sid>100100</if_sid>
+    <field name="json.binary_result">malicious</field>
+    <description>K-Watch: Malicious activity detected in pod $(json.pod_name) — $(json.scenario_result)</description>
+    <group>kwatch,malicious,alert</group>
+  </rule>
+
+  <!-- Critical: both syscall and network confirm malicious -->
+  <rule id="100103" level="15">
+    <if_sid>100102</if_sid>
+    <field name="json.severity">critical</field>
+    <description>K-Watch CRITICAL: Dual-source malicious detection in pod $(json.pod_name) — $(json.scenario_result) [node: $(json.node)]</description>
+    <group>kwatch,malicious,critical</group>
+  </rule>
+
+  <!-- Scenario-specific rules -->
+  <rule id="100110" level="12">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Botnet</field>
+    <description>K-Watch: Botnet (Mirai) activity detected in pod $(json.pod_name)</description>
+    <group>kwatch,botnet</group>
+  </rule>
+
+  <rule id="100111" level="12">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Miner</field>
+    <description>K-Watch: Cryptomining activity detected in pod $(json.pod_name)</description>
+    <group>kwatch,cryptomining</group>
+  </rule>
+
+  <rule id="100112" level="12">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Trojan-Agent</field>
+    <description>K-Watch: Trojan agent activity detected in pod $(json.pod_name)</description>
+    <group>kwatch,trojan</group>
+  </rule>
+
+  <rule id="100113" level="12">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Coinminer</field>
+    <description>K-Watch: Coinminer activity detected in pod $(json.pod_name)</description>
+    <group>kwatch,cryptomining</group>
+  </rule>
+
+  <rule id="100114" level="13">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Cloud Attack</field>
+    <description>K-Watch: Cloud-native attack (Stratus) detected in pod $(json.pod_name)</description>
+    <group>kwatch,cloud-attack</group>
+  </rule>
+
+  <rule id="100115" level="13">
+    <if_sid>100102</if_sid>
+    <field name="json.scenario_result">Brute-Force</field>
+    <description>K-Watch: Brute-force attack detected in pod $(json.pod_name) targeting $(json.namespace)</description>
+    <group>kwatch,bruteforce</group>
+  </rule>
+
+</group>

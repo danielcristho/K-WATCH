@@ -1,0 +1,8 @@
+<decoder name="kwatch">
+  <prematch>{"source":"k-watch"</prematch>
+</decoder>
+
+<decoder name="kwatch-fields">
+  <parent>kwatch</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
