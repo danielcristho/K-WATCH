@@ -109,20 +109,20 @@ spec:
 {{- end }}
 ---
 {{- if .Values.mediaStreaming.enabled }}
-# Media streaming stimulator
+# Redis stimulator (extra client hitting redis-server)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: media-stimulator
+  name: redis-stimulator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: media-stimulator
+      app: redis-stimulator
   template:
     metadata:
       labels:
-        app: media-stimulator
+        app: redis-stimulator
         kids-label: "0"
     spec:
       {{- with .Values.nodeSelector }}
@@ -135,26 +135,28 @@ spec:
       {{- end }}
       containers:
       - name: stimulator
-        image: alpine:latest
-        command: ["/bin/sh", "-c"]
-        args:
-          - |
-            apk add --no-cache curl
-            echo "Starting media streaming stimulator..."
-            while true; do
-              curl -s -o /dev/null http://media-service/media/video1.bin || true
-              curl -s -o /dev/null http://media-service/media/video2.bin || true
-              curl -s -o /dev/null http://media-service/media/audio1.bin || true
-              curl -s -o /dev/null http://media-service/ || true
-              sleep 8
-            done
+        image: redis:7-alpine
         resources:
           requests:
-            cpu: 50m
+            cpu: 30m
             memory: 32Mi
           limits:
             cpu: 100m
             memory: 64Mi
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            sleep 8
+            echo "Starting Redis external stimulator..."
+            while true; do
+              for i in $(seq 1 30); do
+                redis-cli -h redis-service SET ext_key_$i "data_$(date +%s)" EX 30 > /dev/null 2>&1 || true
+                redis-cli -h redis-service GET ext_key_$i > /dev/null 2>&1 || true
+              done
+              redis-cli -h redis-service DBSIZE > /dev/null 2>&1 || true
+              redis-cli -h redis-service KEYS "ext_key_*" > /dev/null 2>&1 || true
+              sleep 5
+            done
 {{- end }}
 ---
 {{- if .Values.webServing.enabled }}

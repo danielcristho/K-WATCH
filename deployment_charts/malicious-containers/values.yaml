@@ -13,7 +13,7 @@ tolerations:
 mirai:
   enabled: true
   image: alpine:latest
-  interval: 60
+  interval: 5
   commandOverride: true
   label: 1
 
@@ -51,5 +51,5 @@ stratus:
 
 bruteforce:
   enabled: true
-  image: vanhauser/hydra:latest
+  image: alpine:latest
   label: 1

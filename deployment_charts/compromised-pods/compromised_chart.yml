@@ -1,5 +1,4 @@
 # Default Namespace: 1 Benign + 1 Malicious
-# These run alongside the main workloads in benign-workloads and malicious namespaces
 ---
 # Benign: Flask API with active request handling
 apiVersion: apps/v1

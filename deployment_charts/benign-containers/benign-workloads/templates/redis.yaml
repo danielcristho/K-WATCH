@@ -1,0 +1,74 @@
+{{- if .Values.mediaStreaming.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-server
+  template:
+    metadata:
+      labels:
+        app: redis-server
+        kids-label: "0"
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        ports:
+        - containerPort: 6379
+      - name: load-generator
+        image: redis:7-alpine
+        resources:
+          requests:
+            cpu: 30m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            sleep 5
+            echo "Starting Redis load generator..."
+            while true; do
+              for i in $(seq 1 50); do
+                redis-cli -h localhost SET key_$i "value_$(date +%s)_$i" EX 60 > /dev/null 2>&1 || true
+              done
+              for i in $(seq 1 50); do
+                redis-cli -h localhost GET key_$i > /dev/null 2>&1 || true
+              done
+              redis-cli -h localhost INCR counter > /dev/null 2>&1 || true
+              redis-cli -h localhost LPUSH mylist $(date +%s) > /dev/null 2>&1 || true
+              redis-cli -h localhost LRANGE mylist 0 10 > /dev/null 2>&1 || true
+              redis-cli -h localhost INFO stats > /dev/null 2>&1 || true
+              sleep 3
+            done
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis-server
+{{- end }}
