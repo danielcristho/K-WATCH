@@ -9,23 +9,23 @@ metadata:
   name: k-watch-config
   namespace: k-watch
 data:
-  TETRAGON_LOG: /var/run/tetragon/tetragon.log
+  TETRAGON_LOG: /var/run/cilium/tetragon/tetragon.log
   HUBBLE_LOG: /var/run/cilium/hubble/kwatch-workloads.log
   MODEL_DIR: /models
   ALERT_LOG: /var/log/k-ids/alerts.json
-  POLL_INTERVAL: "60"
+  POLL_INTERVAL: "30"
   NGRAM_SIZE: "5"
   BENIGN_LABELS: "6,7,8,9"
+  MONITORED_NAMESPACES: "malicious,benign-workloads,default"
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: k-watch-detector-script
+  name: k-watch-secrets
   namespace: k-watch
-data:
-  detect.py: |
-    # Mounted from detector/detect.py via kustomize or manual apply
-    # Replace this with actual script content or mount via hostPath
+type: Opaque
+stringData:
+  DISCORD_WEBHOOK: ""
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -52,23 +52,19 @@ spec:
           effect: NoSchedule
       containers:
         - name: detector
-          image: python:3.13-slim
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              pip install -q "scikit-learn==1.8.0" joblib pandas numpy loguru python-dotenv rich
-              python /app/detect.py
+          image: danielcristh0/kwatch_detector:1.1
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: k-watch-config
+            - secretRef:
+                name: k-watch-secrets
           volumeMounts:
-            - name: detector-script
-              mountPath: /app
             - name: models
               mountPath: /models
               readOnly: true
             - name: tetragon-log
-              mountPath: /var/run/tetragon
+              mountPath: /var/run/cilium/tetragon
               readOnly: true
             - name: hubble-log
               mountPath: /var/run/cilium/hubble
@@ -83,15 +79,12 @@ spec:
               cpu: 500m
               memory: 512Mi
       volumes:
-        - name: detector-script
-          hostPath:
-            path: /opt/k-watch
         - name: models
           hostPath:
             path: /opt/k-watch/models
         - name: tetragon-log
           hostPath:
-            path: /var/run/tetragon
+            path: /var/run/cilium/tetragon
         - name: hubble-log
           hostPath:
             path: /var/run/cilium/hubble
