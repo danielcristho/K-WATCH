@@ -1,0 +1,24 @@
+// Syscall mapp reference: https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md
+
+{
+  "__x64_sys_read": 0,
+  "__x64_sys_write": 1,
+  "__x64_sys_openat": 2,
+  "__x64_sys_close": 3,
+  "__x64_sys_newfstatat": 4,
+  "__x64_sys_mmap": 9,
+  "__x64_sys_mprotect": 10,
+  "__x64_sys_brk": 12,
+  "__x64_sys_ioctl": 16,
+  "__x64_sys_nanosleep": 35,
+  "__x64_sys_socket": 41,
+  "__x64_sys_connect": 42,
+  "__x64_sys_accept": 43,
+  "__x64_sys_sendto": 44,
+  "__x64_sys_recvfrom": 45,
+  "__x64_sys_clone": 56,
+  "__x64_sys_execve": 59,
+  "__x64_sys_kill": 62,
+  "__x64_sys_exit_group": 231,
+  "__x64_sys_epoll_pwait": 281
+}
