@@ -4,6 +4,8 @@ K-Watch: A Hybrid Runtime Intrusion Detection System for Kubernetes Using eBPF a
 
 It collects syscall events via Tetragon and network flow data via Hubble, processes them through trained Decision Tree models, and generates alerts when anomalies are detected.
 
+This project was deployed using [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm).
+
 ## Project Structure
 
 | Directory | Description |
@@ -18,11 +20,14 @@ It collects syscall events via Tetragon and network flow data via Hubble, proces
 
 ## Requirements
 
-### Cluster
+### Infrastructure & Cluster
 
-- Kubernetes >= 1.28
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) >= 1.32
 - [Cilium](https://cilium.io/) with Hubble enabled
 - [Tetragon](https://tetragon.io/) with tracing policy from `deployment_charts/tetragon/`
+- [Terraform](https://developer.hashicorp.com/terraform/docs) >= 1.0
+- [Ansible](https://docs.ansible.com) >= 2.14
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.htmlinst) configured
 
 ### Detector
 
@@ -34,11 +39,6 @@ cd detector
 uv sync
 ```
 
-### Infrastructure (optional, for AWS test cluster)
-
-- Terraform >= 1.0
-- Ansible >= 2.14
-- AWS CLI configured
 
 ## Quick Start
 
