@@ -1,3 +1,6 @@
+# Chart for deploying Redis
+# Reference:
+# https://redis.io/docs/latest/operate/kubernetes/deployment/helm
 {{- if .Values.mediaStreaming.enabled }}
 apiVersion: apps/v1
 kind: Deployment

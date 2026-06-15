@@ -1,4 +1,5 @@
-# WordPress with MySQL deployment
+# Wordpresss with MySQL deployment
+# Stacks -> Wordpress, MySQL
 {{- if .Values.wordpressMysql.enabled }}
 apiVersion: apps/v1
 kind: Deployment

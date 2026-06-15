@@ -1,4 +1,6 @@
 # MariaDB Sysbench deployment
+# Reference: 
+# https://severalnines.com/blog/how-benchmark-performance-mysql-mariadb-using-sysbench
 {{- if .Values.mariadbSysbench.enabled }}
 apiVersion: apps/v1
 kind: Deployment

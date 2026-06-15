@@ -1,5 +1,13 @@
 """
-K-IDS Data Collection Helper
+K-Watch Data Collection Helper
+You can run this on the pre-processing notebook:
+
+from scripts.collect_helper import check_cluster, pull_logs, get_collection_stats
+
+check_cluster()
+
+pull_logs(sessions=144, interval=600, stimulate=True)
+get_collection_stats()
 """
 import os
 import subprocess
@@ -81,7 +89,7 @@ def pull_logs(sessions=5, interval=300, stimulate=True):
         stimulate (bool): Run workload stimulator before collection (default: True)
 
     Output:
-        File-file di raw_logs/sessions/ dan merged di raw_logs/tetragon.json, raw_logs/hubble.json
+        Session files under raw_logs/sessions/ and merged files at raw_logs/tetragon.json, raw_logs/hubble.json
     """
     _set_kubeconfig()
 
@@ -118,8 +126,8 @@ def pull_logs(sessions=5, interval=300, stimulate=True):
 
 def pull_logs_single():
     """
-    Fallback: single-shot collection (mirip cara lama, tapi lebih baik).
-    Berguna untuk testing cepat.
+    Fallback: single-shot log collection.
+    Useful for quick testing.
     """
     _set_kubeconfig()
     os.makedirs(RAW_LOGS_DIR, exist_ok=True)
@@ -147,7 +155,7 @@ def pull_logs_single():
                 f.write(out + "\n")
 
     print("Pulling Tetragon logs (ALL from export-stdout, not --tail limited)...")
-    # Collect dari semua tetragon pods, container export-stdout
+    # Collect from all tetragon pods, export-stdout container
     pods_out, _, _ = _run_cmd(
         "kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon "
         "-o jsonpath='{.items[*].metadata.name}'"
@@ -169,7 +177,7 @@ def pull_logs_single():
 
 
 def get_collection_stats():
-    """Print statistik dari file log yang terkumpul."""
+    """Print statistics for collected log files."""
     print("\n" + "=" * 60)
     print("  Collection Statistics")
     print("=" * 60)

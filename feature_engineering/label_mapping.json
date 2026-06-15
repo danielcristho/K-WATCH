@@ -1,119 +1,129 @@
 {
   "scenario_class_names": [
     "Botnet",
-    "Miner",
+    "Cryptominer",
     "Trojan-Agent",
     "Cloud Attack",
+    "Brute-Force",
     "Data-Caching",
     "Database",
-    "Media-Streaming",
+    "Redis",
     "Web-Serving"
   ],
   "rules": [
     {
-      "pattern": "malicious-containers-mirai",
+      "namespace": "malicious",
+      "pattern": "mirai",
       "scenario_label": 0,
-      "description": "Botnet malware"
+      "description": "Mirai botnet malware"
     },
     {
-      "pattern": "malicious-containers-miner",
+      "namespace": "malicious",
+      "pattern": "miner",
       "scenario_label": 1,
-      "description": "Miner malware"
+      "description": "XMRig/xmr-stak CPU miner"
     },
     {
-      "pattern": "malicious-containers-coinminer",
+      "namespace": "malicious",
+      "pattern": "coinminer",
       "scenario_label": 1,
-      "description": "Coinminer malware"
+      "description": "Coinminer malware (merged with Miner)"
     },
     {
-      "pattern": "malicious-containers-kinsing",
-      "scenario_label": 1,
-      "description": "Kinsing cryptominer"
-    },
-    {
-      "pattern": "malicious-containers-agent",
+      "namespace": "malicious",
+      "pattern": "agent",
       "scenario_label": 2,
       "description": "Trojan agent"
     },
     {
-      "pattern": "malicious-containers-stratus",
+      "namespace": "malicious",
+      "pattern": "stratus",
       "scenario_label": 3,
-      "description": "Stratus cloud attack scenario"
+      "description": "Stratus Red Team cloud attack"
     },
     {
-      "pattern": "memcached",
+      "namespace": "malicious",
+      "pattern": "bruteforce",
       "scenario_label": 4,
-      "description": "Data-caching benign workload"
+      "description": "Brute-force attack (Hydra)"
     },
     {
-      "pattern": "flask-postgres",
+      "namespace": "benign-workloads",
+      "pattern": "memcached-stimulator",
       "scenario_label": 5,
-      "description": "Postgres database backing Flask workload"
+      "description": "Stimulator for Data-caching (Memcached)"
     },
     {
-      "pattern": "wordpress-mysql",
+      "namespace": "benign-workloads",
+      "pattern": "memcached",
       "scenario_label": 5,
-      "description": "MySQL database backing WordPress workload"
+      "description": "Data-caching (Memcached)"
     },
     {
-      "pattern": "mariadb",
-      "scenario_label": 5,
-      "description": "Database benign workload"
-    },
-    {
-      "pattern": "postgres",
-      "scenario_label": 5,
-      "description": "Database benign workload"
-    },
-    {
-      "pattern": "mysql",
-      "scenario_label": 5,
-      "description": "Database benign workload"
-    },
-    {
-      "pattern": "sysbench",
-      "scenario_label": 5,
-      "description": "Database benchmark workload"
-    },
-    {
-      "pattern": "media-streaming",
+      "namespace": "benign-workloads",
+      "pattern": "mariadb-stimulator",
       "scenario_label": 6,
-      "description": "Media-streaming benign workload"
+      "description": "Stimulator for Database (MariaDB)"
     },
     {
+      "namespace": "benign-workloads",
+      "pattern": "mariadb",
+      "scenario_label": 6,
+      "description": "Database (MariaDB)"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "sysbench",
+      "scenario_label": 6,
+      "description": "Database benchmark (sysbench)"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "flask-postgres",
+      "scenario_label": 6,
+      "description": "Database (PostgreSQL)"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "wordpress-mysql",
+      "scenario_label": 6,
+      "description": "Database (MySQL for WordPress)"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "redis-stimulator",
+      "scenario_label": 7,
+      "description": "Stimulator for Redis"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "redis",
+      "scenario_label": 7,
+      "description": "Redis in-memory store"
+    },
+    {
+      "namespace": "benign-workloads",
+      "pattern": "web-serving-stimulator",
+      "scenario_label": 8,
+      "description": "Stimulator for Web-serving"
+    },
+    {
+      "namespace": "benign-workloads",
       "pattern": "web-serving",
-      "scenario_label": 7,
-      "description": "Web-serving benign workload"
+      "scenario_label": 8,
+      "description": "Web-serving"
     },
     {
-      "pattern": "flask",
-      "scenario_label": 7,
-      "description": "Web-serving benign workload"
+      "namespace": "benign-workloads",
+      "pattern": "flask-todo",
+      "scenario_label": 8,
+      "description": "Web-serving (Flask Todo)"
     },
     {
-      "pattern": "wordpress",
-      "scenario_label": 7,
-      "description": "Web-serving benign workload"
-    },
-    {
-      "pattern": "stimulator",
-      "scenario_label": 7,
-      "description": "Traffic generator for web-serving workloads"
-    },
-    {
-      "pattern": "backend-api",
-      "scenario_label": 2,
-      "description": "Legacy default compromised backend alias mapped to Trojan-Agent behavior"
-    },
-    {
-      "pattern": "cache-worker",
-      "scenario_label": 0,
-      "description": "Legacy default compromised cache-worker alias mapped to Botnet/lateral behavior"
-    },
-    {
-      "pattern": "frontend",
-      "scenario_label": 1,
-      "description": "Legacy default compromised frontend alias mapped to Miner behavior"
+      "namespace": "benign-workloads",
+      "pattern": "wordpress-app",
+      "scenario_label": 8,
+      "description": "Web-serving (WordPress)"
     }
   ]
 }

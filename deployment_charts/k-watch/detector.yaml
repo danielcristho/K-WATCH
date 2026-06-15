@@ -11,11 +11,11 @@ metadata:
 data:
   TETRAGON_LOG: /var/run/cilium/tetragon/tetragon.log
   HUBBLE_LOG: /var/run/cilium/hubble/kwatch-workloads.log
-  MODEL_DIR: /models
+  MODEL_DIR: /app/models
   ALERT_LOG: /var/log/k-ids/alerts.json
   POLL_INTERVAL: "30"
   NGRAM_SIZE: "5"
-  BENIGN_LABELS: "6,7,8,9"
+  BENIGN_LABELS: "5,6,7,8"
   MONITORED_NAMESPACES: "malicious,benign-workloads,default"
 ---
 apiVersion: v1
@@ -52,7 +52,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: detector
-          image: danielcristh0/kwatch_detector:1.1
+          image: danielcristh0/kwatch_detector:1.2
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
@@ -60,9 +60,6 @@ spec:
             - secretRef:
                 name: k-watch-secrets
           volumeMounts:
-            - name: models
-              mountPath: /models
-              readOnly: true
             - name: tetragon-log
               mountPath: /var/run/cilium/tetragon
               readOnly: true
@@ -79,9 +76,6 @@ spec:
               cpu: 500m
               memory: 512Mi
       volumes:
-        - name: models
-          hostPath:
-            path: /opt/k-watch/models
         - name: tetragon-log
           hostPath:
             path: /var/run/cilium/tetragon

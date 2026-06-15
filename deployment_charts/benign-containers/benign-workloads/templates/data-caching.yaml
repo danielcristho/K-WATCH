@@ -1,4 +1,6 @@
 # Memcached deployment
+# Source:
+# https://github.com/parsa-epfl/cloudsuite/blob/main/docs/benchmarks/data-caching.md
 {{- if .Values.dataCaching.enabled }}
 apiVersion: apps/v1
 kind: Deployment

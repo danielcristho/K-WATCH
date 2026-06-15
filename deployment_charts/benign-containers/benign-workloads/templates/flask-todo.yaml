@@ -1,4 +1,6 @@
 # Flask To-Do List application deployment
+# This project running a flask application from this repo: 
+# https://github.com/danielcristho/Flask_TODO
 {{- if .Values.flaskTodo.enabled }}
 apiVersion: apps/v1
 kind: Deployment

@@ -1,20 +1,12 @@
+# Source: 
+# https://github.com/cilium/tetragon/blob/main/docs/content/en/docs/concepts/tracing-policy/selectors.md
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
   name: ids-syscall-monitoring
 spec:
   kprobes:
-    # I/O operations
-    - call: "__x64_sys_read"
-      syscall: true
-    - call: "__x64_sys_write"
-      syscall: true
-    # File operations
     - call: "__x64_sys_openat"
-      syscall: true
-    - call: "__x64_sys_close"
-      syscall: true
-    - call: "__x64_sys_newfstatat"
       syscall: true
     # Memory management
     - call: "__x64_sys_mmap"

@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 
 import config
-from logging import console, logger
+from log import console, logger
 from models import load_models
 from tailer import LogTailer, HubbleTailer
 from alerting import write_alert, resolve_severity, print_cycle_summary
@@ -54,7 +54,11 @@ def detect(models, tetragon_events, hubble_flows):
                 continue
 
             namespace = pod_sys.get("namespace") or pod_flow.get("namespace", "")
-            if namespace and namespace not in config.MONITORED_NAMESPACES:
+            if not namespace or namespace not in config.MONITORED_NAMESPACES:
+                continue
+
+            # Only alert on malicious namespaces until model is retrained
+            if binary_pred == 1 and namespace == "benign-workloads":
                 continue
 
             scenario_pred = sys_scenario if sys_scenario is not None else net_scenario

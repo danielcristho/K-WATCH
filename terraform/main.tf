@@ -289,7 +289,7 @@ resource "aws_instance" "k8s_master" {
 
 resource "aws_instance" "k8s_worker" {
   ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.large"
+  instance_type = "t3.2xlarge"            # 8 vCPU, 32GB RAM for workloads + detector
   key_name      = var.key_name
   subnet_id     = aws_subnet.k8s_subnet.id
 

@@ -1,9 +1,13 @@
-# K-IDS - Just Recipes
+# K-Watch - Just Recipes
 # Run tasks with: just <task-name>
+
+export KUBECONFIG := "ansible/kubeconfig"
 
 # Display all available commands
 default:
     @just --list
+
+#! Infrastructure
 
 # Provison configuration (k8s setup, cillium, tetragon deployment) 
 ansible:
@@ -13,7 +17,24 @@ ansible:
 ansible-ping:
     cd ansible && ansible all -m ping
 
-export KUBECONFIG := "ansible/kubeconfig"
+# Stop AWS cluster
+stop-cluster:
+    cd terraform && ./manage-cluster.sh stop
+
+# Start AWS cluster
+start-cluster:
+    cd terraform && ./manage-cluster.sh start
+
+# Check cluster status
+cluster-status:
+    cd terraform && ./manage-cluster.sh status
+
+# Destroy infrastructure
+destroy:
+    cd terraform && terraform destroy
+
+
+#! Helm chart deployment
 
 # Deploy malicious containers
 malicious-deploy:
@@ -56,6 +77,8 @@ benign-clean:
     helm uninstall benign -n benign-workloads || true
     kubectl delete namespace benign-workloads --ignore-not-found
 
+#! Hubble & Tetragon data collection
+
 # Collect data: multi-session with workload stimulation (5 sessions, 5 min interval)
 collect-data:
     cd feature_engineering && ./collect_data.sh --sessions 5 --interval 300 --stimulate
@@ -68,23 +91,8 @@ collect-quick:
 collect-passive sessions="5" interval="300":
     cd feature_engineering && ./collect_data.sh --sessions {{sessions}} --interval {{interval}}
 
-# Stop AWS cluster
-stop-cluster:
-    cd terraform && ./manage-cluster.sh stop
 
-# Start AWS cluster
-start-cluster:
-    cd terraform && ./manage-cluster.sh start
-
-# Check cluster status
-cluster-status:
-    cd terraform && ./manage-cluster.sh status
-
-# Destroy infrastructure
-destroy:
-    cd terraform && terraform destroy
-
-# === Wazuh SIEM ===
+#! Wazuh stach
 
 # Prepare wazuh dedicated node (run after node joins cluster)
 wazuh-prepare-node node:
@@ -182,7 +190,7 @@ wazuh-health:
     kubectl -n wazuh exec -it wazuh-indexer-0 -- \
         curl -sk -u admin:admin https://localhost:9200/_cluster/health?pretty
 
-# Deploy everything (wazuh + benign + malicious)
+# Deploy all (wazuh + benign + malicious)
 deploy-all:
     just wazuh-deploy
     just benign-deploy
@@ -190,7 +198,7 @@ deploy-all:
     @echo "=== All deployments complete ==="
     kubectl get pods -A
 
-# Clean everything
+# Clean all
 clean-all:
     just wazuh-clean
     just benign-clean

@@ -1,3 +1,5 @@
+# Source:
+# https://github.com/cilium/tetragon/blob/main/examples/policylibrary/bpf.yaml
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
