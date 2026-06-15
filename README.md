@@ -1,18 +1,10 @@
 # K-Watch
 
-K-Watch is a runtime intrusion detection system for Kubernetes that combines eBPF-based observability with machine learning (Decision Tree) to classify suspicious workload behavior.
+K-Watch: A Hybrid Runtime Intrusion Detection System for Kubernetes Using eBPF and Machine Learning.
 
 It collects syscall events via Tetragon and network flow data via Hubble, processes them through trained Decision Tree models, and generates alerts when anomalies are detected.
 
-## Architecture Overview
-
-```
-Tetragon (syscall events)  ──┐
-                              ├──► Detector (Python) ──► Alerts (Wazuh)
-Hubble  (network flows)    ──┘
-```
-
-## Components
+## Project Structure
 
 | Directory | Description |
 |---|---|
@@ -42,8 +34,6 @@ cd detector
 uv sync
 ```
 
-Key Python dependencies: `scikit-learn`, `pandas`, `numpy`, `loguru`, `python-dotenv`
-
 ### Infrastructure (optional, for AWS test cluster)
 
 - Terraform >= 1.0
@@ -53,18 +43,7 @@ Key Python dependencies: `scikit-learn`, `pandas`, `numpy`, `loguru`, `python-do
 ## Quick Start
 
 ```bash
-# 1. Provision cluster on AWS
-cd terraform && terraform apply
-
-# 2. Install Kubernetes + Cilium + Tetragon
-cd ansible && ansible-playbook playbook.yml
-
-# 3. Deploy tracing policies and detector
-kubectl apply -f deployment_charts/tetragon/
-kubectl apply -f deployment_charts/k-watch/
-
-# 4. Check alerts
-kubectl logs -l app=k-watch
+$ ./setup-all.sh
 ```
 
 ## Model
