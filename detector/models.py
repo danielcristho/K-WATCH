@@ -2,7 +2,7 @@ import joblib
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 
 from config import MODEL_DIR
-from logging import console
+from log import console
 
 MODEL_FILES = {
     "syscall_scenario": "dt_syscall_scenario_model.pkl",

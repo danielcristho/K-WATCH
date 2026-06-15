@@ -1,2 +1,2 @@
-MASTER_IP: "192.168.122.10"
+MASTER_IP: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
 TOKEN_PATH: "{{ playbook_dir }}/token"

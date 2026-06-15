@@ -5,7 +5,7 @@ from urllib.request import Request, urlopen
 from rich.table import Table
 
 from config import ALERT_LOG, DISCORD_WEBHOOK
-from logging import console, logger
+from log import console, logger
 
 _discord_pool = ThreadPoolExecutor(max_workers=2)
 

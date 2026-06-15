@@ -70,7 +70,7 @@ dashboard:
     port: 5601
     nodePort: 30443
 
-# Wazuh Agent (DaemonSet on workload nodes)
+# Wazuh Agent -> DaemonSet on workload nodes)
 agent:
   enabled: true
   image: wazuh/wazuh-agent:4.14.3
@@ -88,4 +88,4 @@ credentials:
     password: SecretPassword
   apiUser:
     username: wazuh-wui
-    password: W4zuh.Admin!2024#Sec
+    password: W4zuh.Admin!2024#Sec # Don't use this in production:)
