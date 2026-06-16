@@ -2,7 +2,7 @@
 <ossec_config>
   <localfile>
     <log_format>json</log_format>
-    <location>/var/log/k-ids/alerts.json</location>
+    <location>/var/log/kwatch/alerts.json</location>
     <label key="source">k-watch</label>
   </localfile>
 </ossec_config>
