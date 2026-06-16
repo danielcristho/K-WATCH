@@ -37,21 +37,32 @@ def group_events(events):
     return by_pod
 
 
-def extract_features(syscalls):
-    syscall_nums = [SYSCALL_MAP[e] for e in syscalls if e in SYSCALL_MAP]
+def extract_features(syscalls, feature_names):
+    syscall_nums = [SYSCALL_MAP.get(e, -1) for e in syscalls if e in SYSCALL_MAP]
     if len(syscall_nums) < NGRAM_SIZE:
         return None
     grams = list(ngrams(syscall_nums, NGRAM_SIZE))
-    return np.array(grams, dtype=np.float64)
+
+    # Build feature vector as one-hot over known ngram strings
+    ngram_strs = ["_".join(str(n) for n in g) for g in grams]
+    feat_index = {f: i for i, f in enumerate(feature_names)}
+    vec = np.zeros(len(feature_names), dtype=np.float64)
+    for s in ngram_strs:
+        if s in feat_index:
+            vec[feat_index[s]] += 1
+    return vec.reshape(1, -1)
 
 
 def infer(models, syscalls):
-    X = extract_features(syscalls)
+    feature_names = models["feature_syscall"]
+    X = extract_features(syscalls, feature_names)
     if X is None:
         return None, None
-    X_scaled = models["scaler_syscall"].transform(X)
-    binary_preds   = models["syscall_binary"].predict(X_scaled)
-    scenario_preds = models["syscall_scenario"].predict(X_scaled)
-    binary   = int(np.round(binary_preds.mean()))
-    scenario = int(np.bincount(scenario_preds.astype(int)).argmax())
+    scenario_preds = models["syscall_scenario"].predict(X)
+    scenario = int(scenario_preds[0])
+    # Derive binary from scenario: malicious if label < len(BENIGN_LABELS start)
+    from config import BENIGN_LABELS
+    binary = 0 if scenario in BENIGN_LABELS else 1
+    if models.get("syscall_binary") is not None:
+        binary = int(models["syscall_binary"].predict(X)[0])
     return binary, scenario

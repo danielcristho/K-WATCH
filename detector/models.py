@@ -16,6 +16,9 @@ MODEL_FILES = {
     "scenario_names":   "scenario_class_names.pkl",
 }
 
+# Optional models — skipped if file not found
+OPTIONAL_MODELS = {"syscall_binary", "network_binary", "scaler_syscall", "scaler_network"}
+
 
 def load_models():
     models = {}
@@ -30,6 +33,12 @@ def load_models():
         task = progress.add_task("Loading models...", total=len(MODEL_FILES))
         for key, filename in MODEL_FILES.items():
             progress.update(task, description=f"Loading [cyan]{filename}[/cyan]")
-            models[key] = joblib.load(MODEL_DIR / filename)
+            path = MODEL_DIR / filename
+            if path.exists():
+                models[key] = joblib.load(path)
+            elif key in OPTIONAL_MODELS:
+                models[key] = None
+            else:
+                raise FileNotFoundError(f"Required model not found: {path}")
             progress.advance(task)
     return models
