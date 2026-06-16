@@ -5,11 +5,21 @@ from pathlib import Path
 class LogTailer:
     def __init__(self, path: Path):
         self.path = path
-        self.offset = path.stat().st_size if path.exists() else 0
+        self._inode = None
+        self.offset = 0
+        if path.exists():
+            stat = path.stat()
+            self._inode = stat.st_ino
+            self.offset = stat.st_size
 
     def read_new(self):
         if not self.path.exists():
             return []
+        stat = self.path.stat()
+        # Detect log rotation: inode changed or file shrunk
+        if stat.st_ino != self._inode or stat.st_size < self.offset:
+            self._inode = stat.st_ino
+            self.offset = 0
         records = []
         with open(self.path) as f:
             f.seek(self.offset)

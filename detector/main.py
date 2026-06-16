@@ -57,6 +57,10 @@ def detect(models, tetragon_events, hubble_flows):
             if not namespace or namespace not in config.MONITORED_NAMESPACES:
                 continue
 
+            # Skip known benign pods in default namespace
+            if namespace == "default" and any(p in pod_name for p in config.BENIGN_POD_PATTERNS):
+                continue
+
             # Only alert on malicious namespaces until model is retrained
             if binary_pred == 1 and namespace == "benign-workloads":
                 continue
