@@ -51,3 +51,32 @@ $ ./setup-all.sh
 Two Decision Tree classifiers are used — one for syscall events and one for network flows. Each supports binary classification (benign/malicious) and multi-class scenario classification. Models are pre-trained and stored in `detector/models/`.
 
 To retrain, use the notebook in `training/train_model.ipynb`.
+
+```
+┌─────────────────┐     Deploy      ┌──────────────────────────────────────────────┐
+│  Decision Tree  │ ─────────────►  │              K-Watch Detector Pipeline        │
+│     Model       │                 │                                              │
+└─────────────────┘                 │  ┌─────────────┐      ┌──────────────────┐  │
+                                    │  │  Tetragon   │─────►│                  │  │
+                                    │  │  (Syscall)  │      │  ML Inference    │  │
+                                    │  └─────────────┘      │  (Binary +       │  │
+                                    │                       │   Scenario)      │  │
+                                    │  ┌─────────────┐      │                  │  │
+                                    │  │   Hubble    │─────►│                  │  │
+                                    │  │  (Network)  │      └────────┬─────────┘  │
+                                    │  └─────────────┘               │            │
+                                    └───────────────────────────────┼────────────┘
+                                                                    │
+                                              ┌─────────────────────┼──────────────────┐
+                                              ▼                     ▼                  ▼
+                                    ┌──────────────┐    ┌──────────────────┐   ┌──────────────┐
+                                    │  alerts.json │    │     Discord      │   │    Wazuh     │
+                                    │   (log file) │    │  (Push Notif)   │   │  (SIEM/Rules)│
+                                    └──────────────┘    └──────────────────┘   └──────────────┘
+                                                                                      │
+                                                                               ┌──────▼──────┐
+                                                                               │   Kibana/   │
+                                                                               │  Dashboard  │
+                                                                               └─────────────┘
+
+```
