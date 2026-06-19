@@ -94,7 +94,7 @@ def pull_logs(sessions=5, interval=300, stimulate=True):
     _set_kubeconfig()
 
     print("=" * 60)
-    print(f"  K-IDS Multi-Session Data Collection")
+    print(f"  K-WATCH Multi-Session Data Collection")
     print(f"  Sessions : {sessions}")
     print(f"  Interval : {interval}s ({interval // 60} min)")
     print(f"  Stimulate: {stimulate}")

@@ -14,7 +14,7 @@ for env_path in [Path("/opt/k-watch/.env"), Path("/app/.env"), Path(".env")]:
 TETRAGON_LOG  = Path(os.getenv("TETRAGON_LOG", "/var/run/cilium/tetragon/tetragon.log"))
 HUBBLE_LOG    = Path(os.getenv("HUBBLE_LOG", "/var/run/cilium/hubble/kwatch-workloads.log"))
 MODEL_DIR     = Path(os.getenv("MODEL_DIR", "/models"))
-ALERT_LOG     = Path(os.getenv("ALERT_LOG", "/var/log/k-ids/alerts.json"))
+ALERT_LOG     = Path(os.getenv("ALERT_LOG", "/var/log/k-watch/alerts.json"))
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30")) # Interval in seconds to check for new logs
 NGRAM_SIZE    = int(os.getenv("NGRAM_SIZE", "5"))
 BENIGN_LABELS = set(map(int, os.getenv("BENIGN_LABELS", "5,6,7,8").split(",")))

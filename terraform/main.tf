@@ -32,8 +32,8 @@ resource "aws_vpc" "k8s_vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name    = "k8s-kids-vpc"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-vpc"
+    Project = "K-WATCH"
   }
 }
 
@@ -42,8 +42,8 @@ resource "aws_internet_gateway" "k8s_igw" {
   vpc_id = aws_vpc.k8s_vpc.id
 
   tags = {
-    Name    = "k8s-kids-igw"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-igw"
+    Project = "K-WATCH"
   }
 }
 
@@ -55,8 +55,8 @@ resource "aws_subnet" "k8s_subnet" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name    = "k8s-kids-subnet"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-subnet"
+    Project = "K-WATCH"
   }
 }
 
@@ -70,8 +70,8 @@ resource "aws_route_table" "k8s_rt" {
   }
 
   tags = {
-    Name    = "k8s-kids-rt"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-rt"
+    Project = "K-WATCH"
   }
 }
 
@@ -82,8 +82,8 @@ resource "aws_route_table_association" "k8s_rta" {
 }
 
 resource "aws_security_group" "k8s_kids" {
-  name        = "k8s-kids-sg"
-  description = "Security group for K-IDS cluster"
+  name        = "k8s-kwatch-sg"
+  description = "Security group for K-WATCH cluster"
   vpc_id      = aws_vpc.k8s_vpc.id
 
   ingress {
@@ -158,14 +158,14 @@ resource "aws_security_group" "k8s_kids" {
   }
 
   tags = {
-    Name    = "k8s-kids-sg"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-sg"
+    Project = "K-WATCH"
   }
 }
 
 # SIEM Security Group
 resource "aws_security_group" "siem" {
-  name        = "k8s-kids-siem-sg"
+  name        = "k8s-kwatch-siem-sg"
   description = "Security group for SIEM (Wazuh + ELK)"
   vpc_id      = aws_vpc.k8s_vpc.id
 
@@ -257,8 +257,8 @@ resource "aws_security_group" "siem" {
   }
 
   tags = {
-    Name    = "k8s-kids-siem-sg"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-siem-sg"
+    Project = "K-WATCH"
   }
 }
 
@@ -283,13 +283,13 @@ resource "aws_instance" "k8s_master" {
   tags = {
     Name    = "k8s-master"
     Role    = "master"
-    Project = "K-IDS"
+    Project = "K-WATCH"
   }
 }
 
 resource "aws_instance" "k8s_worker" {
   ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.large"             # 2 vCPU, 8GB RAM for workloads + detector
+  instance_type = "t3.medium"             # 2 vCPU, 4GB RAM
   key_name      = var.key_name
   subnet_id     = aws_subnet.k8s_subnet.id
 
@@ -308,11 +308,36 @@ resource "aws_instance" "k8s_worker" {
   tags = {
     Name    = "k8s-worker"
     Role    = "worker"
-    Project = "K-IDS"
+    Project = "K-WATCH"
   }
 }
 
-# SIEM Instance (Wazuh + ELK)
+resource "aws_instance" "k8s_worker2" {
+  ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
+  instance_type = "t3.medium"             # 2 vCPU, 4GB RAM
+  key_name      = var.key_name
+  subnet_id     = aws_subnet.k8s_subnet.id
+
+  vpc_security_group_ids = [aws_security_group.k8s_kids.id]
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  user_data = <<-EOF
+              #!/bin/bash
+              hostnamectl set-hostname k8s-worker-2
+              EOF
+
+  tags = {
+    Name    = "k8s-worker-2"
+    Role    = "worker"
+    Project = "K-WATCH"
+  }
+}
+
+# SIEM Instance (Wazuh stack)
 resource "aws_instance" "siem" {
   ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
   instance_type = "t3.large"              # 2 vCPU, 8GB RAM for ELK stack
@@ -334,7 +359,7 @@ resource "aws_instance" "siem" {
   tags = {
     Name    = "k8s-siem"
     Role    = "siem"
-    Project = "K-IDS"
+    Project = "K-WATCH"
   }
 }
 
@@ -344,7 +369,7 @@ resource "aws_eip" "master_eip" {
 
   tags = {
     Name    = "k8s-master-eip"
-    Project = "K-IDS"
+    Project = "K-WATCH"
   }
 }
 
@@ -353,8 +378,8 @@ resource "aws_eip" "siem_eip" {
   domain   = "vpc"
 
   tags = {
-    Name    = "k8s-kids-siem-eip"
-    Project = "K-IDS"
+    Name    = "k8s-kwatch-siem-eip"
+    Project = "K-WATCH"
   }
 }
 
@@ -375,6 +400,14 @@ output "worker_private_ip" {
   value = aws_instance.k8s_worker.private_ip
 }
 
+output "worker2_public_ip" {
+  value = aws_instance.k8s_worker2.public_ip
+}
+
+output "worker2_private_ip" {
+  value = aws_instance.k8s_worker2.private_ip
+}
+
 output "siem_public_ip" {
   value = aws_eip.siem_eip.public_ip
 }
@@ -389,6 +422,10 @@ output "ssh_command_master" {
 
 output "ssh_command_worker" {
   value = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_instance.k8s_worker.public_ip}"
+}
+
+output "ssh_command_worker2" {
+  value = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_instance.k8s_worker2.public_ip}"
 }
 
 output "ssh_command_siem" {

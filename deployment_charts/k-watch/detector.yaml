@@ -12,8 +12,8 @@ data:
   TETRAGON_LOG: /var/run/cilium/tetragon/tetragon.log
   HUBBLE_LOG: /var/run/cilium/hubble/kwatch-workloads.log
   MODEL_DIR: /app/models
-  ALERT_LOG: /var/log/k-ids/alerts.json
-  POLL_INTERVAL: "30"
+  ALERT_LOG: /var/log/kwatch/alerts.json
+  POLL_INTERVAL: "60"
   NGRAM_SIZE: "5"
   BENIGN_LABELS: "5,6,7,8"
   MONITORED_NAMESPACES: "malicious,benign-workloads,default"
@@ -25,7 +25,7 @@ metadata:
   namespace: k-watch
 type: Opaque
 stringData:
-  DISCORD_WEBHOOK: ""
+  DISCORD_WEBHOOK: "https://discord.com/api/webhooks/your_webhook_url"
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -52,7 +52,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: detector
-          image: danielcristh0/kwatch_detector:1.2
+          image: danielcristh0/kwatch_detector:latest
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
@@ -67,7 +67,7 @@ spec:
               mountPath: /var/run/cilium/hubble
               readOnly: true
             - name: alert-log
-              mountPath: /var/log/k-ids
+              mountPath: /var/log/kwatch
           resources:
             requests:
               cpu: 100m
@@ -84,4 +84,4 @@ spec:
             path: /var/run/cilium/hubble
         - name: alert-log
           hostPath:
-            path: /var/log/k-ids
+            path: /var/log/kwatch
