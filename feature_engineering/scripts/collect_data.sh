@@ -387,7 +387,7 @@ print_summary() {
 main() {
     echo ""
     echo "=========================================="
-    echo -e "${CYAN} K-IDS Multi-Session Data Collector${NC}"
+    echo -e "${CYAN} K-WATCH Multi-Session Data Collector${NC}"
     echo "=========================================="
     echo ""
     echo "  Sessions  : $SESSIONS"

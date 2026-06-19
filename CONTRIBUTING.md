@@ -1,10 +1,13 @@
 # Contributing
 
+Contributions are always welcome.
+
 ## Getting Started
 
+Fork and clone the repository:
+
 ```bash
-git clone https://github.com/your-org/project-kIDS
-cd project-kIDS
+git clone https://github.com/YOUR_USERNAME/k-watch && cd k-watch
 uv sync
 ```
 

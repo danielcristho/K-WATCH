@@ -12,12 +12,12 @@ echo "Generating Wazuh certificates..."
 # Generate Root CA
 openssl genrsa -out root-ca-key.pem 2048
 openssl req -new -x509 -sha256 -key root-ca-key.pem -out root-ca.pem -days 730 \
-  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-IDS/OU=Research/CN=Wazuh Root CA"
+  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-WATCH/OU=Research/CN=Wazuh Root CA"
 
 # Generate Indexer certificate
 openssl genrsa -out node-key.pem 2048
 openssl req -new -key node-key.pem -out node.csr \
-  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-IDS/OU=Research/CN=wazuh-indexer"
+  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-WATCH/OU=Research/CN=wazuh-indexer"
 cat > node-ext.cnf << EOF
 [v3_req]
 subjectAltName = @alt_names
@@ -33,14 +33,14 @@ openssl x509 -req -in node.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreates
 # Generate Admin certificate (for indexer security plugin)
 openssl genrsa -out admin-key.pem 2048
 openssl req -new -key admin-key.pem -out admin.csr \
-  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-IDS/OU=Research/CN=admin"
+  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-WATCH/OU=Research/CN=admin"
 openssl x509 -req -in admin.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial \
   -out admin.pem -days 730 -sha256
 
 # Generate Manager certificate
 openssl genrsa -out manager-key.pem 2048
 openssl req -new -key manager-key.pem -out manager.csr \
-  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-IDS/OU=Research/CN=wazuh-manager"
+  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-WATCH/OU=Research/CN=wazuh-manager"
 cat > manager-ext.cnf << EOF
 [v3_req]
 subjectAltName = @alt_names
@@ -56,7 +56,7 @@ openssl x509 -req -in manager.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcrea
 # Generate Dashboard certificate
 openssl genrsa -out dashboard-key.pem 2048
 openssl req -new -key dashboard-key.pem -out dashboard.csr \
-  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-IDS/OU=Research/CN=wazuh-dashboard"
+  -subj "/C=ID/ST=Jakarta/L=Jakarta/O=K-WATCH/OU=Research/CN=wazuh-dashboard"
 cat > dashboard-ext.cnf << EOF
 [v3_req]
 subjectAltName = @alt_names

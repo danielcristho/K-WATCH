@@ -38,11 +38,18 @@
   hosts: masters
   become: true
   tasks:
-    - name: Label and taint k8s-worker
+    - name: Label and taint k8s-worker-1
       ansible.builtin.shell: |
         export KUBECONFIG={{ kubeconfig_path }}
         kubectl label node k8s-worker-1 node-role.kubernetes.io/worker="" --overwrite
         kubectl taint node k8s-worker-1 role=worker:NoSchedule --overwrite
+      changed_when: true
+
+    - name: Label and taint k8s-worker-2
+      ansible.builtin.shell: |
+        export KUBECONFIG={{ kubeconfig_path }}
+        kubectl label node k8s-worker-2 node-role.kubernetes.io/worker="" --overwrite
+        kubectl taint node k8s-worker-2 role=worker:NoSchedule --overwrite
       changed_when: true
 
     - name: Label and taint k8s-siem

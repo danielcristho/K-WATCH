@@ -1,6 +1,6 @@
-# K-IDS AWS Infrastructure Setup
+# K-WATCH AWS Infrastructure Setup
 
-Setup 2 server AWS untuk K-IDS project (2-3 minggu testing).
+Setup 2 server AWS untuk K-WATCH project (2-3 minggu testing).
 
 ## Estimasi Biaya
 
@@ -172,7 +172,7 @@ aws ce get-cost-and-usage \
 
 # Stop semua instances
 aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances \
-  --filters "Name=tag:Project,Values=K-IDS" \
+  --filters "Name=tag:Project,Values=K-WATCH" \
   --query 'Reservations[*].Instances[*].InstanceId' \
   --output text)
 ```

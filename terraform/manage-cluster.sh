@@ -1,5 +1,5 @@
 #!/bin/bash
-# Auto stop/start script untuk hemat biaya
+# Auto stop/start script to save costs when not using the cluster. Also shows status and cost estimates.
 
 set -e
 
@@ -13,7 +13,7 @@ fi
 
 case "$1" in
     start)
-        echo "Starting K-IDS cluster..."
+        echo "Starting K-WATCH cluster..."
         aws ec2 start-instances --instance-ids $MASTER_ID $WORKER_ID
         echo "Waiting for instances to start..."
         aws ec2 wait instance-running --instance-ids $MASTER_ID $WORKER_ID
@@ -28,7 +28,7 @@ case "$1" in
         ;;
         
     stop)
-        echo "Stopping K-IDS cluster..."
+        echo "Stopping K-WATCH cluster..."
         aws ec2 stop-instances --instance-ids $MASTER_ID $WORKER_ID
         echo "Waiting for instances to stop..."
         aws ec2 wait instance-stopped --instance-ids $MASTER_ID $WORKER_ID
@@ -56,7 +56,7 @@ case "$1" in
 {
   "Tags": {
     "Key": "Project",
-    "Values": ["K-IDS"]
+    "Values": ["K-WATCH"]
   }
 }
 EOF

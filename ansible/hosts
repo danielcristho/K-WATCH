@@ -7,7 +7,8 @@ ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/
 k8s-master ansible_host=18.233.61.187 private_ip=10.0.1.27
 
 [workers]
-k8s-worker ansible_host=3.236.181.222 private_ip=10.0.1.224
+k8s-worker ansible_host=13.220.7.237 private_ip=10.0.1.224
+k8s-worker-2 ansible_host=13.218.108.199 private_ip=10.0.1.49
 k8s-siem ansible_host=52.2.50.34 private_ip=10.0.1.142
 
 [k8s_cluster:children]

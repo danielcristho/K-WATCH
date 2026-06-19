@@ -1,5 +1,5 @@
 #!/bin/bash
-# Quick Terraform deploy for K-IDS infrastructure
+# Quick Terraform deploy for K-WATCH infrastructure
 
 set -euo pipefail
 

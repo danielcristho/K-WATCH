@@ -92,7 +92,7 @@ collect-passive sessions="5" interval="300":
     cd feature_engineering && ./collect_data.sh --sessions {{sessions}} --interval {{interval}}
 
 
-#! Wazuh stach
+#! Wazuh stack
 
 # Prepare wazuh dedicated node (run after node joins cluster)
 wazuh-prepare-node node:
@@ -195,12 +195,23 @@ deploy-all:
     just wazuh-deploy
     just benign-deploy
     just malicious
-    @echo "=== All deployments complete ==="
+    @echo "All deployments complete"
     kubectl get pods -A
+
+#! Detector chart 
+
+# Deploy detector
+detector-deploy:
+    kubectl apply -f deployment_charts/k-watch/detector.yaml
+
+# Delete detector
+detector-clean:
+    kubectl uninstall -f deployment_charts/k-watch/detector.yaml
 
 # Clean all
 clean-all:
     just wazuh-clean
     just benign-clean
     just malicious-clean
-    @echo "=== All deployments removed ==="
+    just detector-clean
+    @echo "=== All charts removed ==="
