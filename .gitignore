@@ -226,3 +226,5 @@ raw_logs/
 datasets/
 OLD_dataset/
 .docs/
+feature_engineering/dataset/*.csv
+training/models/
