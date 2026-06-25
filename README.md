@@ -4,7 +4,7 @@ K-Watch is a hybrid runtime intrusion detection system for Kubernetes that uses 
 
 It collects syscall events via Tetragon and network flow data via Hubble, runs them through trained Decision Tree models, and generates alerts when malicious activity is detected.
 
-Deployed on AWS using [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm).
+This project was deployed on AWS EC2 using [kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm).
 
 ## Requirements
 
@@ -90,8 +90,26 @@ $ kubectl apply -f deployment_charts/k-watch/detector.yaml
 
 Configure via the `k-watch-config` ConfigMap and `k-watch-secrets` Secret in the same file.
 
+## Pre Processing
+
+<will be fill>
+
+## Training
+
+<will be fill>
+
 ## Model
 
-Two Decision Tree classifiers — one for syscall events, one for network flows. Each supports binary (benign/malicious) and multi-class classification. Pre-trained models are stored in `detector/models/`.
+<will be fill>
 
-To retrain, use `training/train_model.ipynb`.
+## Acknowledgement
+
+- [Hybrid Runtime Detection of Malicious Containers Using eBPF](https://doi.org/10.32604/cmc.2025.074871)
+
+- [Enhancing intrusion detection in containerized services: Assessing machine learning models and an advanced representation for system call data](https://doi.org/10.1016/j.cose.2025.104438)
+
+- [Tetragon](https://tetragon.io/)
+
+- [Cilium & Hubble](https://cilium.io/)
+
+- [Wazuh](https://wazuh.com/)
