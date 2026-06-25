@@ -19,6 +19,7 @@ RAW_LOGS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)/raw_logs"
 SESSIONS=5
 INTERVAL=300        # seconds between sessions (5 minutes)
 STIMULATE=false
+START_SESSION=1     # session number to start from
 TETRAGON_TAIL=0     # 0 = all logs since last collection
 
 # Colors constants
@@ -59,19 +60,22 @@ with_retry() {
 # Parse Arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --sessions)   SESSIONS="$2"; shift 2 ;;
-        --interval)   INTERVAL="$2"; shift 2 ;;
-        --stimulate)  STIMULATE=true; shift ;;
+        --sessions)      SESSIONS="$2"; shift 2 ;;
+        --interval)      INTERVAL="$2"; shift 2 ;;
+        --stimulate)     STIMULATE=true; shift ;;
+        --start-session) START_SESSION="$2"; shift 2 ;;
         --help|-h)
-            echo "Usage: $0 [--sessions N] [--interval SECONDS] [--stimulate]"
+            echo "Usage: $0 [--sessions N] [--interval SECONDS] [--stimulate] [--start-session N]"
             echo ""
             echo "Options:"
-            echo "  --sessions N       Total session that will be collected (default: 5)"
-            echo "  --interval SECS    Interval per session in seconds (default: 300)"
-            echo "  --stimulate        Run workload stimulators during collection (default: false)"
+            echo "  --sessions N         Total sessions to collect (default: 5)"
+            echo "  --interval SECS      Interval per session in seconds (default: 300)"
+            echo "  --stimulate          Run workload stimulators during collection"
+            echo "  --start-session N    Resume from session N (default: 1)"
             echo ""
             echo "Example:"
-            echo "  $0 --sessions 5 --interval 300 --stimulate"
+            echo "  $0 --sessions 120 --interval 300 --stimulate"
+            echo "  $0 --sessions 120 --interval 300 --stimulate --start-session 37"
             exit 0
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -390,7 +394,7 @@ main() {
     echo -e "${CYAN} K-WATCH Multi-Session Data Collector${NC}"
     echo "=========================================="
     echo ""
-    echo "  Sessions  : $SESSIONS"
+    echo "  Sessions  : $START_SESSION-$SESSIONS"
     echo "  Interval  : ${INTERVAL}s"
     echo "  Stimulate : $STIMULATE"
     echo "  Output    : $RAW_LOGS_DIR"
@@ -402,7 +406,7 @@ main() {
     log_step "Starting data collection ($SESSIONS sessions, ${INTERVAL}s interval)..."
     echo ""
 
-    for session in $(seq 1 "$SESSIONS"); do
+    for session in $(seq "$START_SESSION" "$SESSIONS"); do
         echo ""
         echo -e "${BLUE}──────────────────────────────────────────${NC}"
         log_step "Session $session/$SESSIONS"

@@ -4,7 +4,6 @@ metadata:
   name: "rule-allow-frontend"
   namespace: demo
 spec:
-  description: "Hanya izinkan trafik HTTP dari frontend ke backend-api. Malicious client akan diblokir."
   endpointSelector:
     matchLabels:
       app: backend-api

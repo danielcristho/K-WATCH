@@ -16,6 +16,7 @@ mirai:
   interval: 5
   commandOverride: true
   label: 1
+  replicas: 3
 
 miner:
   enabled: true
@@ -31,12 +32,14 @@ agent:
   image: alpine:latest
   commandOverride: true
   label: 1
+  replicas: 2
 
 coinminer:
   enabled: true
   image: alpine:latest
   commandOverride: true
   label: 1
+  replicas: 2
 
 # kinsing:
 #   enabled: true

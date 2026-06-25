@@ -37,6 +37,7 @@ spec:
               sed -i "s|CHANGE_ENROLL_IP|${JOIN_MANAGER_IP}|g" /var/ossec/etc/ossec.conf
               sed -i "s|CHANGE_ENROLL_PORT|1515|g" /var/ossec/etc/ossec.conf
               sed -i "s|CHANGE_AGENT_NAME|$(cat /etc/hostname 2>/dev/null || echo node-$$)|g" /var/ossec/etc/ossec.conf
+              printf '<ossec_config><localfile><log_format>json</log_format><location>/var/log/kwatch/alerts.json</location></localfile></ossec_config>' >> /var/ossec/etc/ossec.conf
               /var/ossec/bin/wazuh-control start
               tail -f /var/ossec/logs/ossec.log
           volumeMounts:

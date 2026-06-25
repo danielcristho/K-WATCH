@@ -1,8 +1,9 @@
 ---
 - name: Configure kubelet node-ip
-  ansible.builtin.copy:
-    dest: /etc/default/kubelet
-    content: "KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['private_ip'] }}"
+  ansible.builtin.shell: |
+    NODE_IP=$(ip -4 addr show scope global | grep inet | awk '{print $2}' | cut -d/ -f1 | grep '^10\.' | head -1)
+    echo "KUBELET_EXTRA_ARGS=--node-ip=${NODE_IP}" > /etc/default/kubelet
+  changed_when: true
 
 - name: Copy join command to worker
   ansible.builtin.copy:
