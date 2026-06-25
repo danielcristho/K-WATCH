@@ -67,7 +67,7 @@ def detect(models, tetragon_events, hubble_flows):
 
             scenario_pred = sys_scenario if sys_scenario is not None else net_scenario
             scenario_name = scenario_names[scenario_pred] if scenario_pred is not None and scenario_pred < len(scenario_names) else "unknown"
-            node = pod_sys.get("node") or pod_flow.get("node", "")
+            node = pod_sys.get("node") or pod_flow.get("node") or config.NODE_NAME
 
             alert = {
                 "timestamp":           ts,

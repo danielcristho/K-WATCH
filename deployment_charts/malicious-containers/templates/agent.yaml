@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: agent
     kids-label: "1"
 spec:
-  replicas: 1
+  replicas: {{ .Values.agent.replicas | default 1 }}
   selector:
     matchLabels:
       {{- include "malicious-containers.selectorLabels" . | nindent 6 }}

