@@ -1,4 +1,4 @@
-# K-Watch
+# K-WATCH
 
 K-Watch is a hybrid runtime intrusion detection system for Kubernetes that uses eBPF and machine learning.
 
