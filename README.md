@@ -92,15 +92,15 @@ Configure via the `k-watch-config` ConfigMap and `k-watch-secrets` Secret in the
 
 ## Pre Processing
 
-<will be fill>
+will be fill
 
 ## Training
 
-<will be fill>
+will be fill
 
 ## Model
 
-<will be fill>
+will be fill
 
 ## Acknowledgement
 
