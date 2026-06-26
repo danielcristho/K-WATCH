@@ -92,24 +92,20 @@ Configure via the `k-watch-config` ConfigMap and `k-watch-secrets` Secret in the
 
 ## Pre Processing
 
-will be fill
+TBD
 
 ## Training
 
-will be fill
+TBD
 
 ## Model
 
-will be fill
+TBD
 
 ## Acknowledgement
 
 - [Hybrid Runtime Detection of Malicious Containers Using eBPF](https://doi.org/10.32604/cmc.2025.074871)
-
 - [Enhancing intrusion detection in containerized services: Assessing machine learning models and an advanced representation for system call data](https://doi.org/10.1016/j.cose.2025.104438)
-
 - [Tetragon](https://tetragon.io/)
-
 - [Cilium & Hubble](https://cilium.io/)
-
 - [Wazuh](https://wazuh.com/)
