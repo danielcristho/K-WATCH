@@ -44,8 +44,16 @@ def detect(models, tetragon_events, hubble_flows):
             pod_sys  = syscall_by_pod.get(pod_name, {})
             pod_flow = flow_by_pod.get(pod_name, {})
 
-            sys_bin, sys_scenario = tetragon.infer(models, pod_sys.get("syscalls", []))
-            net_bin, net_scenario = hubble.infer(models, pod_flow.get("flows", []))
+            sys_syscalls = pod_sys.get("syscalls", [])
+            pod_flows = pod_flow.get("flows", [])
+
+            sys_bin, sys_scenario = (None, None)
+            if len(sys_syscalls) >= config.MIN_SYSCALL_THRESHOLD:
+                sys_bin, sys_scenario = tetragon.infer(models, sys_syscalls)
+
+            net_bin, net_scenario = (None, None)
+            if len(pod_flows) >= config.MIN_FLOW_THRESHOLD:
+                net_bin, net_scenario = hubble.infer(models, pod_flows)
 
             binary_pred = resolve_binary(sys_bin, net_bin)
             progress.advance(task)
@@ -54,15 +62,15 @@ def detect(models, tetragon_events, hubble_flows):
                 continue
 
             namespace = pod_sys.get("namespace") or pod_flow.get("namespace", "")
-            if not namespace or namespace not in config.MONITORED_NAMESPACES:
+            if not namespace:
+                continue
+            if namespace in config.EXCLUDED_NAMESPACES:
+                continue
+            if config.MONITORED_NAMESPACES and namespace not in config.MONITORED_NAMESPACES:
                 continue
 
             # Skip known benign pods in default namespace
             if namespace == "default" and any(p in pod_name for p in config.BENIGN_POD_PATTERNS):
-                continue
-
-            # Only alert on malicious namespaces until model is retrained
-            if binary_pred == 1 and namespace == "benign-workloads":
                 continue
 
             scenario_pred = sys_scenario if sys_scenario is not None else net_scenario
@@ -81,8 +89,8 @@ def detect(models, tetragon_events, hubble_flows):
                 "scenario_result":     scenario_name,
                 "syscall_binary_pred": sys_bin,
                 "network_binary_pred": net_bin,
-                "syscall_count":       len(pod_sys.get("syscalls", [])),
-                "flow_count":          len(pod_flow.get("flows", [])),
+                "syscall_count":       len(sys_syscalls),
+                "flow_count":          len(pod_flows),
                 "severity":            resolve_severity(binary_pred, sys_bin, net_bin),
             }
 
@@ -119,7 +127,7 @@ def main():
         hubble_flows    = hubble_tailer.read_new()
 
         if not tetragon_events and not hubble_flows:
-            logger.debug("No new events in this cycle")
+            logger.info("No new events in this cycle")
             continue
 
         logger.info(
