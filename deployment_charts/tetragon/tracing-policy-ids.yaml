@@ -6,40 +6,40 @@ metadata:
   name: ids-syscall-monitoring
 spec:
   kprobes:
-    - call: "__x64_sys_openat"
+    - call: "sys_openat"
       syscall: true
     # Memory management
-    - call: "__x64_sys_mmap"
+    - call: "sys_mmap"
       syscall: true
-    - call: "__x64_sys_mprotect"
+    - call: "sys_mprotect"
       syscall: true
-    - call: "__x64_sys_brk"
+    - call: "sys_brk"
       syscall: true
     # Network operations
-    - call: "__x64_sys_socket"
+    - call: "sys_socket"
       syscall: true
-    - call: "__x64_sys_connect"
+    - call: "sys_connect"
       syscall: true
-    - call: "__x64_sys_accept"
+    - call: "sys_accept"
       syscall: true
-    - call: "__x64_sys_sendto"
+    - call: "sys_sendto"
       syscall: true
-    - call: "__x64_sys_recvfrom"
+    - call: "sys_recvfrom"
       syscall: true
     # Process management
-    - call: "__x64_sys_clone"
+    - call: "sys_clone"
       syscall: true
-    - call: "__x64_sys_execve"
+    - call: "sys_execve"
       syscall: true
-    - call: "__x64_sys_exit_group"
+    - call: "sys_exit_group"
       syscall: true
-    - call: "__x64_sys_kill"
+    - call: "sys_kill"
       syscall: true
     # Timing/scheduling
-    - call: "__x64_sys_nanosleep"
+    - call: "sys_nanosleep"
       syscall: true
     # I/O control
-    - call: "__x64_sys_ioctl"
+    - call: "sys_ioctl"
       syscall: true
-    - call: "__x64_sys_epoll_pwait"
+    - call: "sys_epoll_pwait"
       syscall: true
