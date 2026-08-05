@@ -1,0 +1,80 @@
+---
+# Flannel 
+# Disabled kube-proxy and network-policy, replace with Cilium or Calico
+- name: Install k3s server
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" INSTALL_K3S_EXEC="server \
+      --node-ip={{ hostvars[inventory_hostname]['private_ip'] }} \
+      --node-external-ip={{ hostvars[inventory_hostname]['ansible_host'] }} \
+      --node-name={{ inventory_hostname }} \
+      --tls-san={{ hostvars[inventory_hostname]['ansible_host'] }} \
+      --cluster-cidr={{ k8s_pod_cidr }} \
+      --service-cidr={{ k8s_service_cidr }} \
+      --flannel-backend=none \
+      --disable-network-policy \
+      --disable-kube-proxy \
+      --disable=traefik \
+      --disable=servicelb \
+      --write-kubeconfig-mode=644" sh -
+  args:
+    creates: /etc/systemd/system/k3s.service
+  when: "'masters' in group_names"
+
+# Wait for k3s server to be ready before proceeding with agent installation
+- name: Wait for k3s server to be ready
+  ansible.builtin.command: k3s kubectl get --raw /readyz
+  register: k3s_ready
+  until: k3s_ready.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
+  when: "'masters' in group_names"
+
+# Read the k3s node token from the master node, which is needed to join agents
+- name: Read k3s node token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token
+  when: "'masters' in group_names"
+
+# Install k3s agent on workers and SIEM nodes
+- name: Install k3s agent
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_URL="https://{{ hostvars[groups['masters'][0]]['private_ip'] }}:6443" \
+      K3S_TOKEN="{{ hostvars[groups['masters'][0]]['k3s_node_token']['content'] | b64decode | trim }}" \
+      INSTALL_K3S_EXEC="agent \
+        --node-ip={{ hostvars[inventory_hostname]['private_ip'] }} \
+        --node-name={{ inventory_hostname }}" sh -
+  args:
+    creates: /etc/systemd/system/k3s-agent.service
+  when: "'masters' not in group_names"
+
+# Setup kubeconfig for ubuntu and root
+- name: Setup kubeconfig for ubuntu and root
+  ansible.builtin.shell: |
+    mkdir -p /home/{{ ansible_user }}/.kube /root/.kube
+    cp /etc/rancher/k3s/k3s.yaml /home/{{ ansible_user }}/.kube/config
+    cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
+    chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube
+  changed_when: true
+  when: "'masters' in group_names"
+
+# k3s writes 127.0.0.1, which is unreachable from the Ansible controller
+- name: Point kubeconfig at the public IP
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: 'https://127\.0\.0\.1:6443'
+    replace: "https://{{ hostvars[inventory_hostname]['ansible_host'] }}:6443"
+  loop:
+    - /home/{{ ansible_user }}/.kube/config
+    - /root/.kube/config
+  when: "'masters' in group_names"
+
+# Fetch kubeconfig to controller
+- name: Fetch kubeconfig to controller
+  ansible.builtin.fetch:
+    src: /home/{{ ansible_user }}/.kube/config
+    dest: ./kubeconfig
+    flat: true
+  when: "'masters' in group_names"

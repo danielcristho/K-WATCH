@@ -1,10 +1,13 @@
 ---
+# Tasks file for workers
+# Configure kubelet node-ip for kubeadm
 - name: Configure kubelet node-ip
   ansible.builtin.shell: |
     NODE_IP=$(ip -4 addr show scope global | grep inet | awk '{print $2}' | cut -d/ -f1 | grep '^10\.' | head -1)
     echo "KUBELET_EXTRA_ARGS=--node-ip=${NODE_IP}" > /etc/default/kubelet
   changed_when: true
 
+# Copy join command from controller to worker
 - name: Copy join command to worker
   ansible.builtin.copy:
     src: ./kubeadm_join_command
@@ -17,11 +20,3 @@
       bash /tmp/kubeadm_join_command --node-name {{ inventory_hostname }}
     fi
   changed_when: true
-
-- name: Open Hubble port
-  ansible.builtin.iptables:
-    chain: INPUT
-    protocol: tcp
-    destination_port: "4244"
-    jump: ACCEPT
-    action: insert

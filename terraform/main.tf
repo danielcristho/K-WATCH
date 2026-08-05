@@ -25,6 +25,80 @@ variable "my_ip" {
   type        = string
 }
 
+variable "architecture" {
+  description = "CPU architecture for x86_64 or arm64 nodes"
+  type        = string
+  default     = "x86_64"
+
+  validation {
+    condition     = contains(["x86_64", "arm64"], var.architecture)
+    error_message = "architecture must be x86_64 or arm64."
+  }
+}
+
+variable "ubuntu_release" {
+  description = "Ubuntu LTS codename and version, e.g. jammy-22.04 or noble-24.04"
+  type        = string
+  default     = "jammy-22.04"
+}
+
+variable "worker_count" {
+  description = "Number of worker nodes. Edge clusters can run a single one."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.worker_count >= 1
+    error_message = "worker_count must be at least 1."
+  }
+}
+
+variable "node_instance_type" {
+  description = "Instance type for master and workers. Defaults to the architecture preset."
+  type        = string
+  default     = null
+}
+
+variable "siem_instance_type" {
+  description = "Instance type for the SIEM node. Defaults to the architecture preset."
+  type        = string
+  default     = null
+}
+
+locals {
+  # Canonical names arm64 images "arm64" but x86_64 images "amd64"
+  ami_arch = var.architecture == "arm64" ? "arm64" : "amd64"
+
+  # Paired with the architecture so an arm64 AMI can never land on an Intel instance
+  instance_presets = {
+    x86_64 = { node = "t3.medium", siem = "t3.large" }
+    arm64  = { node = "t4g.medium", siem = "t4g.large" }
+  }
+
+  node_instance_type = coalesce(var.node_instance_type, local.instance_presets[var.architecture].node)
+  siem_instance_type = coalesce(var.siem_instance_type, local.instance_presets[var.architecture].siem)
+}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd*/ubuntu-${var.ubuntu_release}-${local.ami_arch}-server-*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = [var.architecture]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 # VPC
 resource "aws_vpc" "k8s_vpc" {
   cidr_block           = "10.0.0.0/16"
@@ -263,8 +337,8 @@ resource "aws_security_group" "siem" {
 }
 
 resource "aws_instance" "k8s_master" {
-  ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.medium"
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = local.node_instance_type
   key_name      = var.key_name
   subnet_id     = aws_subnet.k8s_subnet.id
 
@@ -288,8 +362,9 @@ resource "aws_instance" "k8s_master" {
 }
 
 resource "aws_instance" "k8s_worker" {
-  ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.medium"             # 2 vCPU, 4GB RAM
+  count         = var.worker_count
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = local.node_instance_type
   key_name      = var.key_name
   subnet_id     = aws_subnet.k8s_subnet.id
 
@@ -302,45 +377,31 @@ resource "aws_instance" "k8s_worker" {
 
   user_data = <<-EOF
               #!/bin/bash
-              hostnamectl set-hostname k8s-worker
+              hostnamectl set-hostname k8s-worker-${count.index + 1}
               EOF
 
   tags = {
-    Name    = "k8s-worker"
+    Name    = "k8s-worker-${count.index + 1}"
     Role    = "worker"
     Project = "K-WATCH"
   }
 }
 
-resource "aws_instance" "k8s_worker2" {
-  ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.medium"             # 2 vCPU, 4GB RAM
-  key_name      = var.key_name
-  subnet_id     = aws_subnet.k8s_subnet.id
+# Keep the pre-count instances instead of destroying and rebuilding them
+moved {
+  from = aws_instance.k8s_worker
+  to   = aws_instance.k8s_worker[0]
+}
 
-  vpc_security_group_ids = [aws_security_group.k8s_kids.id]
-
-  root_block_device {
-    volume_size = 30
-    volume_type = "gp3"
-  }
-
-  user_data = <<-EOF
-              #!/bin/bash
-              hostnamectl set-hostname k8s-worker-2
-              EOF
-
-  tags = {
-    Name    = "k8s-worker-2"
-    Role    = "worker"
-    Project = "K-WATCH"
-  }
+moved {
+  from = aws_instance.k8s_worker2
+  to   = aws_instance.k8s_worker[1]
 }
 
 # SIEM Instance (Wazuh stack)
 resource "aws_instance" "siem" {
-  ami           = "ami-0e2c8caa4b6378d8c" # Ubuntu 22.04 LTS us-east-1
-  instance_type = "t3.large"              # 2 vCPU, 8GB RAM for ELK stack
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = local.siem_instance_type
   key_name      = var.key_name
   subnet_id     = aws_subnet.k8s_subnet.id
 
@@ -392,20 +453,12 @@ output "master_private_ip" {
   value = aws_instance.k8s_master.private_ip
 }
 
-output "worker_public_ip" {
-  value = aws_instance.k8s_worker.public_ip
+output "worker_public_ips" {
+  value = aws_instance.k8s_worker[*].public_ip
 }
 
-output "worker_private_ip" {
-  value = aws_instance.k8s_worker.private_ip
-}
-
-output "worker2_public_ip" {
-  value = aws_instance.k8s_worker2.public_ip
-}
-
-output "worker2_private_ip" {
-  value = aws_instance.k8s_worker2.private_ip
+output "worker_private_ips" {
+  value = aws_instance.k8s_worker[*].private_ip
 }
 
 output "siem_public_ip" {
@@ -420,12 +473,8 @@ output "ssh_command_master" {
   value = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_eip.master_eip.public_ip}"
 }
 
-output "ssh_command_worker" {
-  value = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_instance.k8s_worker.public_ip}"
-}
-
-output "ssh_command_worker2" {
-  value = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_instance.k8s_worker2.public_ip}"
+output "ssh_commands_worker" {
+  value = [for w in aws_instance.k8s_worker : "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${w.public_ip}"]
 }
 
 output "ssh_command_siem" {

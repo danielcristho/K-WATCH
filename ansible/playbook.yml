@@ -14,15 +14,31 @@
   become: true
   roles: [k8s-base]
 
+- name: Setup k3s
+  hosts: all
+  become: true
+  roles:
+    - role: k3s
+      when: k8s_distro == 'k3s'
+
 - name: Setup Master
   hosts: masters
   become: true
-  roles: [master]
+  roles:
+    - role: master
+      when: k8s_distro == 'kubeadm'
 
 - name: Setup Worker
-  hosts: workers
+  hosts: workers:siem
   become: true
-  roles: [worker]
+  roles:
+    - role: worker
+      when: k8s_distro == 'kubeadm'
+
+- name: Install cluster CLIs
+  hosts: masters
+  become: true
+  roles: [cli-tools]
 
 - name: Setup Cilium & Hubble
   hosts: masters
@@ -38,23 +54,23 @@
   hosts: masters
   become: true
   tasks:
-    - name: Label and taint k8s-worker
+    - name: Require an up-to-date inventory
+      ansible.builtin.assert:
+        that: groups['siem'] is defined
+        fail_msg: "No [siem] group. Re-run terraform/generate-inventory.sh."
+
+    - name: Label and taint workers
       ansible.builtin.shell: |
         export KUBECONFIG={{ kubeconfig_path }}
-        kubectl label node k8s-worker node-role.kubernetes.io/worker="" --overwrite
-        kubectl taint node k8s-worker role=worker:NoSchedule --overwrite
+        kubectl label node {{ item }} node-role.kubernetes.io/worker="" --overwrite
+        kubectl taint node {{ item }} role=worker:NoSchedule --overwrite
+      loop: "{{ groups['workers'] }}"
       changed_when: true
 
-    - name: Label and taint k8s-worker-2
+    - name: Label and taint SIEM
       ansible.builtin.shell: |
         export KUBECONFIG={{ kubeconfig_path }}
-        kubectl label node k8s-worker-2 node-role.kubernetes.io/worker="" --overwrite
-        kubectl taint node k8s-worker-2 role=worker:NoSchedule --overwrite
-      changed_when: true
-
-    - name: Label and taint k8s-siem
-      ansible.builtin.shell: |
-        export KUBECONFIG={{ kubeconfig_path }}
-        kubectl label node siem node-role.kubernetes.io/siem="" --overwrite
-        kubectl taint node siem role=siem:NoSchedule --overwrite
+        kubectl label node {{ item }} node-role.kubernetes.io/siem="" --overwrite
+        kubectl taint node {{ item }} role=siem:NoSchedule --overwrite
+      loop: "{{ groups['siem'] }}"
       changed_when: true

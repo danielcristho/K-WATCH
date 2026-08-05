@@ -1,0 +1,20 @@
+---
+- name: Install Helm, Cilium CLI, Hubble CLI
+  vars:
+    cli_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+  ansible.builtin.shell: |
+    # Helm
+    if ! command -v helm &> /dev/null; then
+      curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    fi
+    # Cilium CLI
+    if ! command -v cilium &> /dev/null; then
+      CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+      curl -L --fail https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-{{ cli_arch }}.tar.gz | tar xzvf - -C /usr/local/bin
+    fi
+    # Hubble CLI
+    if ! command -v hubble &> /dev/null; then
+      HUBBLE_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/hubble/main/stable.txt)
+      curl -L --fail https://github.com/cilium/hubble/releases/download/$HUBBLE_VERSION/hubble-linux-{{ cli_arch }}.tar.gz | tar xzvf - -C /usr/local/bin
+    fi
+  changed_when: true

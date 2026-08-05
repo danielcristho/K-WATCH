@@ -1,14 +1,18 @@
 ---
+# Tasks file for master
+# Check if k3s is already installed
 - name: Check if cluster already initialized
   ansible.builtin.stat:
     path: /etc/kubernetes/admin.conf
   register: kubeadm_init_check
 
+# Configure kubelet node-ip for kubeadm
 - name: Configure kubelet node-ip
   ansible.builtin.copy:
     dest: /etc/default/kubelet
     content: "KUBELET_EXTRA_ARGS=--node-ip={{ hostvars[inventory_hostname]['private_ip'] }}"
 
+# Initialize Kubernetes cluster with kubeadm
 - name: Initialize Kubernetes cluster
   ansible.builtin.shell: |
     kubeadm init \
@@ -20,6 +24,7 @@
       --node-name={{ inventory_hostname }}
   when: not kubeadm_init_check.stat.exists
 
+# Setup kubeconfig for ubuntu and root
 - name: Setup kubeconfig for ubuntu and root
   ansible.builtin.shell: |
     mkdir -p /home/{{ ansible_user }}/.kube /root/.kube
@@ -28,12 +33,14 @@
     chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube
   changed_when: true
 
+# Update kubeconfig server to use public IP
 - name: Update kubeconfig server to use public IP
   ansible.builtin.replace:
     path: /etc/kubernetes/admin.conf
     regexp: 'https://{{ hostvars[inventory_hostname]["private_ip"] }}:6443'
     replace: 'https://{{ hostvars[inventory_hostname]["ansible_host"] }}:6443'
 
+# Copy updated kubeconfig to user directories
 - name: Copy updated kubeconfig to user directories
   ansible.builtin.shell: |
     cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
@@ -41,6 +48,7 @@
     chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube
   changed_when: true
 
+# Fetch kubeconfig and join command to controller
 - name: Fetch kubeconfig and join command
   ansible.builtin.shell: |
     kubeadm token create --print-join-command > /tmp/kubeadm_join_command
@@ -54,21 +62,3 @@
   loop:
     - { src: "/etc/kubernetes/admin.conf", dest: "./kubeconfig" }
     - { src: "/tmp/kubeadm_join_command", dest: "./kubeadm_join_command" }
-
-- name: Install Helm, Cilium, Hubble CLI
-  ansible.builtin.shell: |
-    # Helm
-    if ! command -v helm &> /dev/null; then
-      curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    fi
-    # Cilium CLI
-    if ! command -v cilium &> /dev/null; then
-      CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-      curl -L --fail https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-amd64.tar.gz | tar xzvf - -C /usr/local/bin
-    fi
-    # Hubble CLI
-    if ! command -v hubble &> /dev/null; then
-      HUBBLE_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/hubble/main/stable.txt)
-      curl -L --fail https://github.com/cilium/hubble/releases/download/$HUBBLE_VERSION/hubble-linux-amd64.tar.gz | tar xzvf - -C /usr/local/bin
-    fi
-  changed_when: true

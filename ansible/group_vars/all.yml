@@ -4,5 +4,7 @@ master_ip: "{{ hostvars[groups['masters'][0]]['ansible_host'] }}"
 kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
 
 # Kubernetes
+k8s_distro: kubeadm # kubeadm or k3s
+k3s_version: "" # empty installs the latest stable
 k8s_pod_cidr: "10.42.0.0/16"
 k8s_service_cidr: "10.43.0.0/16"

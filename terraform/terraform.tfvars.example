@@ -4,3 +4,11 @@
 aws_region = "us-east-1"       # US East (Virginia)
 key_name   = "your-key-name"   # Your AWS SSH key name
 my_ip      = "0.0.0.0/0"       # Your IP address (change for security)
+
+# x86_64 -> t3.medium / t3.large, arm64 -> t4g.medium / t4g.large
+architecture = "x86_64"
+
+# Override the presets above if you need different sizing
+# node_instance_type = "t4g.large"
+# siem_instance_type = "t4g.xlarge"
+# ubuntu_release     = "noble-24.04"

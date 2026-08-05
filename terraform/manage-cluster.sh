@@ -3,22 +3,12 @@
 
 set -e
 
-MASTER_ID=$(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=k8s-master" "Name=instance-state-name,Values=running,stopped" \
-    --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || echo "")
-WORKER_ID=$(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=k8s-worker" "Name=instance-state-name,Values=running,stopped" \
-    --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || echo "")
-WORKER2_ID=$(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=k8s-worker-2" "Name=instance-state-name,Values=running,stopped" \
-    --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || echo "")
-SIEM_ID=$(aws ec2 describe-instances \
-    --filters "Name=tag:Name,Values=k8s-siem" "Name=instance-state-name,Values=running,stopped" \
-    --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || echo "")
+# Selected by project tag so any worker_count is picked up
+ALL_IDS=$(aws ec2 describe-instances \
+    --filters "Name=tag:Project,Values=K-WATCH" "Name=instance-state-name,Values=running,stopped" \
+    --query 'Reservations[*].Instances[*].InstanceId' --output text 2>/dev/null || echo "")
 
-ALL_IDS="$MASTER_ID $WORKER_ID $WORKER2_ID $SIEM_ID"
-
-if [ -z "$MASTER_ID" ]; then
+if [ -z "$ALL_IDS" ]; then
     echo "Error: Instance IDs not found. Run terraform apply first."
     exit 1
 fi
