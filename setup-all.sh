@@ -4,7 +4,10 @@
 
 set -e
 
-# Colors
+# Default values
+K8S_DISTRO="${K8S_DISTRO:-kubeadm}"
+
+# Colors consts
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -42,6 +45,17 @@ if [ -z "$SSH_KEY_FILE" ] || [ ! -f "$SSH_KEY_FILE" ]; then
     echo -e "  ${YELLOW}SSH_KEY_FILE=/path/to/your-key.pem ./setup-all.sh${NC}"
     exit 1
 fi
+
+case "$K8S_DISTRO" in
+    kubeadm|k3s) ;;
+    *) log_error "K8S_DISTRO must be kubeadm or k3s (got: $K8S_DISTRO)"; exit 1 ;;
+esac
+
+# Architecture lives in terraform.tfvars so it survives a bare 'terraform apply'
+ARCHITECTURE=$(sed -n 's/^[[:space:]]*architecture[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' \
+    "$SCRIPT_DIR/terraform/terraform.tfvars" 2>/dev/null | tail -1)
+
+log_info "Distro: ${BOLD}$K8S_DISTRO${NC}  Architecture: ${BOLD}${ARCHITECTURE:-x86_64 (default)}${NC}"
 
 export SSH_KEY_FILE
 log_info "Using SSH key: ${BOLD}$SSH_KEY_FILE${NC}"
@@ -102,11 +116,11 @@ log_info "Worker SSH OK"
 
 # Step 5: Run Ansible playbook
 echo ""
-log_step "Step 5/6: Installing Kubernetes with Ansible..."
+log_step "Step 5/6: Installing Kubernetes ($K8S_DISTRO) with Ansible..."
 log_warn "This will take 10-15 minutes..."
 echo ""
 
-ansible-playbook -i hosts playbook.yml
+ansible-playbook -i hosts playbook.yml -e "k8s_distro=$K8S_DISTRO"
 
 log_info "Kubernetes installed successfully"
 
