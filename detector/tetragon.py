@@ -1,4 +1,7 @@
+"""Tetragon syscall telemetry: grouping, feature extraction, and inference."""
+
 import json
+import re
 from collections import defaultdict
 from itertools import islice
 from pathlib import Path
@@ -7,8 +10,10 @@ import numpy as np
 
 from config import NGRAM_SIZE
 
+ARCH_PREFIX = re.compile(r"^__(?:x64|arm64|ia32)_")
+
 with open(Path(__file__).parent / "data" / "syscall_map.json") as _f:
-    SYSCALL_MAP = json.load(_f)
+    SYSCALL_MAP = {ARCH_PREFIX.sub("", k): v for k, v in json.load(_f).items()}
 
 
 def ngrams(seq, n):
@@ -31,14 +36,19 @@ def group_events(events):
         pod_name = pod.get("name", "")
         if not pod_name:
             continue
-        by_pod[pod_name]["syscalls"].append(kprobe.get("function_name", "__x64_sys_exit_group"))
+        by_pod[pod_name]["syscalls"].append(kprobe.get("function_name", "sys_exit_group"))
         by_pod[pod_name]["namespace"] = pod.get("namespace", "")
         by_pod[pod_name]["node"] = entry.get("node_name", "")
     return by_pod
 
 
 def extract_features(syscalls, feature_names):
-    syscall_nums = [SYSCALL_MAP.get(e, -1) for e in syscalls if e in SYSCALL_MAP]
+    """Encode a syscall sequence as an n-gram frequency vector
+    Tetragon emits arch-specific symbols (__x64_sys_read on amd64,
+    __arm64_sys_read on arm64), so the prefix is stripped before lookup.
+    """
+    names = [ARCH_PREFIX.sub("", e) for e in syscalls]
+    syscall_nums = [SYSCALL_MAP[n] for n in names if n in SYSCALL_MAP]
     if len(syscall_nums) < NGRAM_SIZE:
         return None
     grams = list(ngrams(syscall_nums, NGRAM_SIZE))
@@ -66,3 +76,18 @@ def infer(models, syscalls):
     if models.get("syscall_binary") is not None:
         binary = int(models["syscall_binary"].predict(X)[0])
     return binary, scenario
+
+
+if __name__ == "__main__":
+    # Same behaviour on amd64 and arm64 must give the same vector
+    feats = ["0_1_41_42_44", "1_41_42_44_45"]
+    amd64 = ["__x64_sys_read", "__x64_sys_write", "__x64_sys_socket",
+             "__x64_sys_connect", "__x64_sys_sendto", "__x64_sys_recvfrom"]
+    arm64 = [n.replace("__x64_", "__arm64_") for n in amd64]
+
+    v_amd, v_arm = extract_features(amd64, feats), extract_features(arm64, feats)
+    assert v_amd is not None and v_arm is not None, "arch prefix not normalised"
+    assert (v_amd == v_arm).all(), f"arch mismatch: {v_amd} != {v_arm}"
+    assert v_amd.sum() == 2, f"expected both ngrams matched, got {v_amd}"
+    assert extract_features(["__x64_sys_read"], feats) is None, "short seq must return None"
+    print("ok: syscall features are architecture-neutral")
