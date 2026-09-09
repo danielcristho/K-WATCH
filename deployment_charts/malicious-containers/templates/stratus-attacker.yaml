@@ -57,8 +57,10 @@ spec:
           args:
             - |
               apk add --no-cache wget ca-certificates tar
-              wget https://github.com/DataDog/stratus-red-team/releases/latest/download/stratus-red-team_Linux_x86_64.tar.gz
-              tar -xzf stratus-red-team_Linux_x86_64.tar.gz
+              # Release assets are named Linux_x86_64 and Linux_arm64
+              ARCH=$(uname -m); case "$ARCH" in aarch64) ARCH=arm64 ;; esac
+              wget https://github.com/DataDog/stratus-red-team/releases/latest/download/stratus-red-team_Linux_${ARCH}.tar.gz
+              tar -xzf stratus-red-team_Linux_${ARCH}.tar.gz
               chmod +x stratus
               mv stratus /usr/local/bin/stratus
               
