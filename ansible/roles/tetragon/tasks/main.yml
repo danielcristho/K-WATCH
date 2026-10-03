@@ -8,7 +8,8 @@
 - name: Install Tetragon
   ansible.builtin.shell: |
     helm upgrade --install tetragon cilium/tetragon \
-      --namespace kube-system
+      --namespace kube-system \
+      --set tetragon.exportFileMaxSizeMB={{ tetragon_export_max_size_mb }}
   environment:
     KUBECONFIG: "{{ kubeconfig_path }}"
 
