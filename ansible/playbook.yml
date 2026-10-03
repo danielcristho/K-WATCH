@@ -54,10 +54,10 @@
   hosts: masters
   become: true
   tasks:
-    - name: Require an up-to-date inventory
+    - name: Reject a stale inventory
       ansible.builtin.assert:
-        that: groups['siem'] is defined
-        fail_msg: "No [siem] group. Re-run terraform/generate-inventory.sh."
+        that: groups['workers'] | select('search', 'siem') | list | length == 0
+        fail_msg: "A siem host is inside [workers]. Re-generate the inventory."
 
     - name: Label and taint workers
       ansible.builtin.shell: |
@@ -72,5 +72,5 @@
         export KUBECONFIG={{ kubeconfig_path }}
         kubectl label node {{ item }} node-role.kubernetes.io/siem="" --overwrite
         kubectl taint node {{ item }} role=siem:NoSchedule --overwrite
-      loop: "{{ groups['siem'] }}"
+      loop: "{{ groups['siem'] | default([]) }}"
       changed_when: true
