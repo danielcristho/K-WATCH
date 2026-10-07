@@ -69,10 +69,6 @@ def detect(models, tetragon_events, hubble_flows):
             if config.MONITORED_NAMESPACES and namespace not in config.MONITORED_NAMESPACES:
                 continue
 
-            # Skip known benign pods in default namespace
-            if namespace == "default" and any(p in pod_name for p in config.BENIGN_POD_PATTERNS):
-                continue
-
             # Report the scenario from the source that flagged it, not always syscall
             if sys_bin == 1:
                 scenario_pred = sys_scenario
