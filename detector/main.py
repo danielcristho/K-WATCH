@@ -73,7 +73,13 @@ def detect(models, tetragon_events, hubble_flows):
             if namespace == "default" and any(p in pod_name for p in config.BENIGN_POD_PATTERNS):
                 continue
 
-            scenario_pred = sys_scenario if sys_scenario is not None else net_scenario
+            # Report the scenario from the source that flagged it, not always syscall
+            if sys_bin == 1:
+                scenario_pred = sys_scenario
+            elif net_bin == 1:
+                scenario_pred = net_scenario
+            else:
+                scenario_pred = sys_scenario if sys_scenario is not None else net_scenario
             scenario_name = scenario_names[scenario_pred] if scenario_pred is not None and scenario_pred < len(scenario_names) else "unknown"
             node = pod_sys.get("node") or pod_flow.get("node") or config.NODE_NAME
 
