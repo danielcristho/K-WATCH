@@ -21,8 +21,18 @@ variable "key_name" {
 }
 
 variable "my_ip" {
-  description = "Your IP for SSH access"
+  description = "Your public IP in CIDR form, e.g. 1.2.3.4/32. Gates SSH, the k3s API, and every dashboard."
   type        = string
+
+  validation {
+    condition     = var.my_ip != "0.0.0.0/0"
+    error_message = "my_ip must not be 0.0.0.0/0. That exposes the k3s API and the Wazuh dashboard to the internet."
+  }
+
+  validation {
+    condition     = can(cidrhost(var.my_ip, 0))
+    error_message = "my_ip must be CIDR notation, e.g. 1.2.3.4/32."
+  }
 }
 
 variable "architecture" {
@@ -173,7 +183,7 @@ resource "aws_security_group" "k8s_kids" {
     from_port   = 6443
     to_port     = 6443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -181,7 +191,7 @@ resource "aws_security_group" "k8s_kids" {
     from_port   = 4245
     to_port     = 4245
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -189,7 +199,7 @@ resource "aws_security_group" "k8s_kids" {
     from_port   = 12000
     to_port     = 12000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -197,7 +207,7 @@ resource "aws_security_group" "k8s_kids" {
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -205,7 +215,7 @@ resource "aws_security_group" "k8s_kids" {
     from_port   = 30000
     to_port     = 32767
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -272,7 +282,7 @@ resource "aws_security_group" "siem" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -280,7 +290,7 @@ resource "aws_security_group" "siem" {
     from_port   = 30000
     to_port     = 32767
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
@@ -296,7 +306,7 @@ resource "aws_security_group" "siem" {
     from_port   = 5601
     to_port     = 5601
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.my_ip]
   }
 
   ingress {
