@@ -1,9 +1,9 @@
 {
   "__x64_sys_read": 0,
   "__x64_sys_write": 1,
-  "__x64_sys_openat": 2,
+  "__x64_sys_openat": 257,
   "__x64_sys_close": 3,
-  "__x64_sys_newfstatat": 4,
+  "__x64_sys_newfstatat": 262,
   "__x64_sys_mmap": 9,
   "__x64_sys_mprotect": 10,
   "__x64_sys_brk": 12,
