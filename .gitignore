@@ -228,3 +228,6 @@ OLD_dataset/
 .docs/
 feature_engineering/dataset/*.csv
 training/models/
+
+# TLS keys and certs, regenerate with deployment_charts/wazuh/certs/generate_certs.sh
+*.pem
