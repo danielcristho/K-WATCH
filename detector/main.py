@@ -9,7 +9,7 @@ from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 import config
 from log import console, logger
 from models import load_models
-from tailer import LogTailer, HubbleTailer
+from tailer import LogTailer
 from alerting import write_alert, resolve_severity, print_cycle_summary
 import tetragon
 import hubble
@@ -119,7 +119,7 @@ def main():
     logger.success("All models loaded successfully")
 
     tetragon_tailer = LogTailer(config.TETRAGON_LOG)
-    hubble_tailer   = HubbleTailer(config.HUBBLE_LOG.parent, prefix="kwatch-workloads")
+    hubble_tailer   = LogTailer(config.HUBBLE_LOG)
 
     logger.info("[bold green]Watching for new events...[/bold green]")
 
