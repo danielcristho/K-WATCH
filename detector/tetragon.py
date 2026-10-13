@@ -63,11 +63,19 @@ def extract_features(syscalls, feature_names):
     return vec.reshape(1, -1)
 
 
+def decisive_features(model):
+    """Indices the tree actually splits on, a fraction of the full feature set."""
+    f = model.tree_.feature
+    return f[f >= 0]
+
+
 def infer(models, syscalls):
     feature_names = models["feature_syscall"]
     X = extract_features(syscalls, feature_names)
     if X is None:
         return None, None
+    if not X[0, decisive_features(models["syscall_scenario"])].any():
+        return None, None  # the tree saw no evidence, abstain rather than trust its default leaf
     scenario_preds = models["syscall_scenario"].predict(X)
     scenario = int(scenario_preds[0])
     # Derive binary from scenario: malicious if label < len(BENIGN_LABELS start)
@@ -90,4 +98,23 @@ if __name__ == "__main__":
     assert (v_amd == v_arm).all(), f"arch mismatch: {v_amd} != {v_arm}"
     assert v_amd.sum() == 2, f"expected both ngrams matched, got {v_amd}"
     assert extract_features(["__x64_sys_read"], feats) is None, "short seq must return None"
-    print("ok: syscall features are architecture-neutral")
+
+    class _Stub:
+        """A tree that splits only on feats[0]; verdict=None means predict must never run."""
+
+        def __init__(self, verdict=None):
+            self.tree_ = type("t", (), {"feature": np.array([0, -2, -2])})()
+            self._verdict = verdict
+
+        def predict(self, X):
+            assert self._verdict is not None, "predict ran without evidence"
+            return [self._verdict]
+
+    def _models(verdict=None):
+        return {"feature_syscall": feats, "syscall_scenario": _Stub(verdict), "syscall_binary": None}
+
+    blind = ["__x64_sys_openat"] * 6  # real tokens, but its ngram is not in feats
+    assert extract_features(blind, feats).sum() == 0, "expected an all-zero vector"
+    assert infer(_models(), blind) == (None, None), "no evidence must abstain"
+    assert infer(_models(verdict=0), amd64) == (1, 0), "evidence must reach the model"
+    print("ok: architecture-neutral features, and no verdict without evidence")
