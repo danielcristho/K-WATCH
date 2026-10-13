@@ -1,5 +1,5 @@
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +12,12 @@ with open(Path(__file__).parent / "data" / "ports.json") as _f:
 MINING_PORTS = set(_ports["mining"])
 DB_PORTS     = set(_ports["database"])
 HTTP_PORTS   = set(_ports["http"])
+
+# Training windowed each pod-session into chunks of this many flows
+# (feature_engineering/pre_processing.ipynb, NETWORK_WINDOW_SIZE), so every
+# threshold in the tree sits below 100. Aggregating a whole poll cycle into one
+# row puts the vector outside anything the model was fitted on.
+NETWORK_WINDOW_SIZE = 100
 
 
 def group_flows(entries):
@@ -75,10 +81,38 @@ def extract_features(flows, feature_names):
 
 
 def infer(models, flows):
-    X = extract_features(flows, models["feature_network"])
-    if X is None:
+    names = models["feature_network"]
+    votes = []
+    for i in range(0, len(flows), NETWORK_WINDOW_SIZE):
+        X = extract_features(flows[i:i + NETWORK_WINDOW_SIZE], names)
+        if X is None:
+            continue
+        votes.append(int(models["network_scenario"].predict(pd.DataFrame(X, columns=names))[0]))
+    if not votes:
         return None, None
-    X_df = pd.DataFrame(X, columns=models["feature_network"])
-    scenario = int(models["network_scenario"].predict(X_df)[0])
+    scenario = Counter(votes).most_common(1)[0][0]
     binary   = 0 if scenario in BENIGN_LABELS else 1
     return binary, scenario
+
+
+if __name__ == "__main__":
+    names = ["proto_TCP_count", "unique_dst_ports"]
+
+    class _Tally:
+        """Stands in for the tree and counts how many windows infer() asked about."""
+
+        def __init__(self):
+            self.windows = 0
+
+        def predict(self, X):
+            self.windows += 1
+            return [6]  # Database, a benign label
+
+    tally = _Tally()
+    models = {"feature_network": names, "network_scenario": tally}
+    flows = [{"l4": {"TCP": {"destination_port": 80, "source_port": 1234}}}] * 250
+
+    assert infer(models, flows) == (0, 6)
+    assert tally.windows == 3, f"250 flows are 3 windows of <={NETWORK_WINDOW_SIZE}, got {tally.windows}"
+    assert infer(models, []) == (None, None), "no flows must abstain"
+    print(f"ok: flows are windowed at {NETWORK_WINDOW_SIZE}, matching training")
