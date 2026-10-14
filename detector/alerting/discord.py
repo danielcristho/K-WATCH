@@ -21,7 +21,7 @@ class DiscordSink:
     def _post(self, alert: dict) -> None:
         severity = alert["severity"]
         payload = {"embeds": [{
-            "title": f"\U0001f6a8 K-Watch Alert — {severity.upper()}",
+            "title": f"\U0001f6a8 K-Watch Alert - {severity.upper()}",
             "color": COLORS.get(severity, 0xFFFF00),
             "fields": [
                 {"name": "Pod",       "value": f"`{alert['pod_name']}`",      "inline": True},

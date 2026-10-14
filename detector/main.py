@@ -2,11 +2,12 @@
 
 import time
 
-from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 import alerting
-from alerting.console import ConsoleSink, print_cycle_summary
+from alerting.console import (
+    INTERACTIVE, ConsoleSink, print_alert_cycle, print_banner, print_quiet_cycle,
+)
 from alerting.discord import DiscordSink
 from alerting.file import FileSink
 from core import config
@@ -26,6 +27,7 @@ def load_with_progress():
         TextColumn("[green]{task.completed}/{task.total}"),
         TimeElapsedColumn(),
         console=console,
+        disable=not INTERACTIVE,
     ) as progress:
         task = progress.add_task("Loading models...", total=total_files())
 
@@ -37,67 +39,61 @@ def load_with_progress():
 
 
 def build():
-    """Everything that knows a concrete class lives here, and nowhere else."""
+    """Everything that names a concrete class lives here, and nowhere else."""
     bundles, scenario_names = load_with_progress()
-    sources = [
-        TetragonSource(bundles["syscall"]),
-        HubbleSource(bundles["network"]),
-    ]
+    sources = [TetragonSource(bundles["syscall"]), HubbleSource(bundles["network"])]
     tailers = {
         "syscall": LogTailer(config.TETRAGON_LOG),
         "network": LogTailer(config.HUBBLE_LOG),
     }
-    sinks = [
-        FileSink(config.ALERT_LOG),
-        DiscordSink(config.DISCORD_WEBHOOK),
-        ConsoleSink(),
-    ]
+    sinks = [FileSink(config.ALERT_LOG), DiscordSink(config.DISCORD_WEBHOOK), ConsoleSink()]
     return Detector(sources, scenario_names), tailers, sinks
 
 
-def main():
-    console.print(Panel.fit("[bold cyan]K-Watch[/bold cyan] — Detector Pipeline", border_style="cyan"))
-    logger.info(f"Tetragon : [orange3]{config.TETRAGON_LOG}[/orange3]")
-    logger.info(f"Hubble   : [orange3]{config.HUBBLE_LOG}[/orange3]")
-    logger.info(f"Models   : [orange3]{config.MODEL_DIR}[/orange3]")
-    logger.info(f"Alerts   : [orange3]{config.ALERT_LOG}[/orange3]")
-    logger.info(f"Interval : [bold]{config.POLL_INTERVAL}s[/bold]")
-
-    detector, tailers, sinks = build()
-    logger.success("All models loaded successfully")
-    logger.info("[bold green]Watching for new events...[/bold green]")
-
-    while True:
-        time.sleep(config.POLL_INTERVAL)
-        batches = {name: tailer.read_new() for name, tailer in tailers.items()}
-        if not any(batches.values()):
-            logger.info("No new events in this cycle")
-            continue
-
-        logger.info(
-            f"Processing [bold]{len(batches['syscall'])}[/bold] syscall events, "
-            f"[bold]{len(batches['network'])}[/bold] flows"
+def analyse(detector, batches):
+    """Run one cycle, showing a spinner only where a spinner can be redrawn."""
+    if not INTERACTIVE:
+        return detector.run(batches)
+    with Progress(SpinnerColumn(), TextColumn("[bold blue]{task.description}"),
+                  console=console, transient=True) as progress:
+        task = progress.add_task("Analyzing pods...", total=None)
+        return detector.run(
+            batches,
+            on_pod=lambda pod: progress.update(task, description=f"Analyzing [bold]{pod}[/bold]"),
         )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            console=console,
-            transient=True,
-        ) as progress:
-            task = progress.add_task("Analyzing pods...", total=None)
-            alerts = detector.run(
-                batches,
-                on_pod=lambda pod: progress.update(task, description=f"Analyzing [bold]{pod}[/bold]"),
-            )
 
+def main():
+    print_banner({
+        "Tetragon": config.TETRAGON_LOG,
+        "Hubble":   config.HUBBLE_LOG,
+        "Models":   config.MODEL_DIR,
+        "Alerts":   config.ALERT_LOG,
+        "Interval": f"{config.POLL_INTERVAL}s",
+    })
+
+    detector, tailers, sinks = build()
+    logger.info("[bold green]Watching for new events[/bold green]")
+
+    cycle = 0
+    while True:
+        time.sleep(config.POLL_INTERVAL)
+        cycle += 1
+        batches = {name: tailer.read_new() for name, tailer in tailers.items()}
+        counts = {"syscalls": len(batches["syscall"]), "flows": len(batches["network"])}
+
+        if not any(batches.values()):
+            print_quiet_cycle(cycle, counts)
+            continue
+
+        alerts = analyse(detector, batches)
         for alert in alerts:
             alerting.dispatch(alert, sinks)
-        print_cycle_summary(alerts, {
-            "Syscall events": len(batches["syscall"]),
-            "Flow events":    len(batches["network"]),
-        })
+
+        if alerts:
+            print_alert_cycle(cycle, counts, alerts)
+        else:
+            print_quiet_cycle(cycle, counts)
 
 
 if __name__ == "__main__":

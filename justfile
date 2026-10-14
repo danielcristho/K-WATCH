@@ -201,7 +201,7 @@ detector-test:
     #!/usr/bin/env bash
     set -euo pipefail
     cd detector
-    for m in core.pipeline sources.tetragon sources.hubble sources.tailer \
+    for m in core.pipeline sources.tetragon sources.hubble sources.tailer alerting.console \
              tests.test_syscall_map tests.test_alert_schema; do
         printf "%-26s " "$m"
         .venv/bin/python -m "$m"
