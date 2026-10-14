@@ -65,14 +65,20 @@ def test_source_names_drive_the_prediction_fields():
 
 def test_every_field_wazuh_reads_is_emitted():
     text = RULES.read_text()
-    used = set(re.findall(r'field name="(\w+)"', text))
-    used |= {f.split(".")[-1] for f in re.findall(r"\$\(([\w.]+)\)", text)}
+    used = set(re.findall(r'field name="(\w+)"', text)) | set(re.findall(r"\$\((\w+)\)", text))
     missing = used - EXPECTED_FIELDS
     assert not missing, f"Wazuh rules read fields the detector never emits: {sorted(missing)}"
+
+
+def test_no_rule_interpolates_a_namespaced_field():
+    # $(json.pod_name) parses but resolves to nothing, so the description renders empty
+    dotted = re.findall(r"\$\([\w]+\.[\w.]+\)", RULES.read_text())
+    assert not dotted, f"these resolve to an empty string at runtime: {sorted(set(dotted))}"
 
 
 if __name__ == "__main__":
     test_alert_has_exactly_the_agreed_fields()
     test_source_names_drive_the_prediction_fields()
     test_every_field_wazuh_reads_is_emitted()
+    test_no_rule_interpolates_a_namespaced_field()
     print(f"ok: {len(EXPECTED_FIELDS)} alert fields pinned, Wazuh rules all satisfied")

@@ -3,7 +3,7 @@
   <!-- Base rule: any K-Watch alert -->
   <rule id="100100" level="3">
     <field name="source">k-watch</field>
-    <description>K-Watch: Runtime detection event from pod $(json.pod_name)</description>
+    <description>K-Watch: Runtime detection event from pod $(pod_name)</description>
     <group>kwatch</group>
   </rule>
 
@@ -11,7 +11,7 @@
   <rule id="100101" level="3">
     <if_sid>100100</if_sid>
     <field name="binary_result">benign</field>
-    <description>K-Watch: Benign activity from pod $(binary_result) in $(namespace)</description>
+    <description>K-Watch: Benign activity from pod $(pod_name) in $(namespace)</description>
     <group>kwatch,benign</group>
   </rule>
 
