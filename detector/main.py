@@ -5,9 +5,7 @@ import time
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 import alerting
-from alerting.console import (
-    INTERACTIVE, ConsoleSink, print_alert_cycle, print_banner, print_quiet_cycle,
-)
+from alerting.console import INTERACTIVE, print_alert_cycle, print_banner, print_quiet_cycle
 from alerting.discord import DiscordSink
 from alerting.file import FileSink
 from core import config
@@ -46,7 +44,8 @@ def build():
         "syscall": LogTailer(config.TETRAGON_LOG),
         "network": LogTailer(config.HUBBLE_LOG),
     }
-    sinks = [FileSink(config.ALERT_LOG), DiscordSink(config.DISCORD_WEBHOOK), ConsoleSink()]
+    # The cycle panel is the console output; a per-alert line would only repeat it
+    sinks = [FileSink(config.ALERT_LOG), DiscordSink(config.DISCORD_WEBHOOK)]
     return Detector(sources, scenario_names), tailers, sinks
 
 
