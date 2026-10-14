@@ -196,6 +196,17 @@ detector-deploy:
 detector-clean:
     kubectl uninstall -f deployment_charts/k-watch/detector.yaml
 
+# Run every detector self-check and test
+detector-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd detector
+    for m in core.pipeline sources.tetragon sources.hubble sources.tailer \
+             tests.test_syscall_map tests.test_alert_schema; do
+        printf "%-26s " "$m"
+        .venv/bin/python -m "$m"
+    done
+
 # Clean all
 clean-all:
     just wazuh-clean

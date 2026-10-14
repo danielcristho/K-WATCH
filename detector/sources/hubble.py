@@ -1,10 +1,13 @@
+"""Hubble network telemetry: flow-window aggregates over Cilium flow records."""
+
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
 import pandas as pd
 
-from config import BENIGN_LABELS
+from core.config import MIN_FLOW_THRESHOLD
+from core.contracts import ModelBackedSource, PodTelemetry, Verdict
 
 with open(Path(__file__).parent / "data" / "ports.json") as _f:
     _ports = json.load(_f)
@@ -13,27 +16,8 @@ MINING_PORTS = set(_ports["mining"])
 DB_PORTS     = set(_ports["database"])
 HTTP_PORTS   = set(_ports["http"])
 
-# Training windowed each pod-session into chunks of this many flows
-# (feature_engineering/pre_processing.ipynb, NETWORK_WINDOW_SIZE), so every
-# threshold in the tree sits below 100. Aggregating a whole poll cycle into one
-# row puts the vector outside anything the model was fitted on.
+# Training aggregated flows into fixed windows; inference has to use the same unit
 NETWORK_WINDOW_SIZE = 100
-
-
-def group_flows(entries):
-    by_pod = defaultdict(lambda: {"flows": [], "namespace": "", "node": ""})
-    for entry in entries:
-        flow = entry.get("flow", {})
-        if not flow:
-            continue
-        src = flow.get("source", {})
-        pod_name = src.get("pod_name", "")
-        if not pod_name:
-            continue
-        by_pod[pod_name]["flows"].append(flow)
-        by_pod[pod_name]["namespace"] = src.get("namespace", "")
-        by_pod[pod_name]["node"] = entry.get("node_name", "")
-    return by_pod
 
 
 def extract_features(flows, feature_names):
@@ -80,22 +64,48 @@ def extract_features(flows, feature_names):
     return pd.DataFrame([agg]).reindex(columns=feature_names, fill_value=0).values
 
 
-def infer(models, flows):
-    names = models["feature_network"]
-    votes = []
-    for i in range(0, len(flows), NETWORK_WINDOW_SIZE):
-        X = extract_features(flows[i:i + NETWORK_WINDOW_SIZE], names)
-        if X is None:
-            continue
-        votes.append(int(models["network_scenario"].predict(pd.DataFrame(X, columns=names))[0]))
-    if not votes:
-        return None, None
-    scenario = Counter(votes).most_common(1)[0][0]
-    binary   = 0 if scenario in BENIGN_LABELS else 1
-    return binary, scenario
+class HubbleSource(ModelBackedSource):
+    """Flows answer where a pod went."""
+
+    name = "network"
+    count_field = "flow_count"
+
+    def __init__(self, bundle, min_records: int = MIN_FLOW_THRESHOLD):
+        super().__init__(bundle, min_records)
+
+    def group(self, entries):
+        by_pod = defaultdict(PodTelemetry)
+        for entry in entries:
+            flow = entry.get("flow", {})
+            if not flow:
+                continue
+            src = flow.get("source", {})
+            pod_name = src.get("pod_name", "")
+            if not pod_name:
+                continue
+            tele = by_pod[pod_name]
+            tele.records.append(flow)
+            tele.namespace = src.get("namespace", "")
+            tele.node = entry.get("node_name", "")
+        return by_pod
+
+    def infer(self, records):
+        names = self.bundle.features
+        votes = []
+        for i in range(0, len(records), NETWORK_WINDOW_SIZE):
+            X = extract_features(records[i:i + NETWORK_WINDOW_SIZE], names)
+            if X is None:
+                continue
+            votes.append(self.scenario_of(pd.DataFrame(X, columns=names)))
+        if not votes:
+            return None
+        scenario = Counter(votes).most_common(1)[0][0]
+        return Verdict(self.binary_of(scenario), scenario)
 
 
 if __name__ == "__main__":
+    from core.modelstore import ModelBundle
+
     names = ["proto_TCP_count", "unique_dst_ports"]
 
     class _Tally:
@@ -109,10 +119,17 @@ if __name__ == "__main__":
             return [6]  # Database, a benign label
 
     tally = _Tally()
-    models = {"feature_network": names, "network_scenario": tally}
+    source = HubbleSource(ModelBundle(scenario=tally, binary=None, features=names))
     flows = [{"l4": {"TCP": {"destination_port": 80, "source_port": 1234}}}] * 250
 
-    assert infer(models, flows) == (0, 6)
+    assert source.infer(flows) == Verdict(binary=0, scenario=6)
     assert tally.windows == 3, f"250 flows are 3 windows of <={NETWORK_WINDOW_SIZE}, got {tally.windows}"
-    assert infer(models, []) == (None, None), "no flows must abstain"
+    assert source.infer([]) is None, "no flows must abstain"
+
+    grouped = source.group([
+        {"flow": {"source": {"pod_name": "p", "namespace": "ns"}}, "node_name": "n1"},
+    ])
+    assert len(grouped["p"].records) == 1, "grouping must keep the flow"
+    assert grouped["p"].namespace == "ns" and grouped["p"].node == "n1", "pod metadata lost"
+
     print(f"ok: flows are windowed at {NETWORK_WINDOW_SIZE}, matching training")

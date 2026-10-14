@@ -6,8 +6,8 @@ from pathlib import Path
 
 import joblib
 
-ROOT = Path(__file__).resolve().parent
-POLICY = ROOT.parent / "deployment_charts" / "tetragon" / "tracing-policy-ids.yaml"
+DETECTOR = Path(__file__).resolve().parent.parent
+POLICY = DETECTOR.parent / "deployment_charts" / "tetragon" / "tracing-policy-ids.yaml"
 ARCH_PREFIX = re.compile(r"^__(?:x64|arm64|ia32)_")
 
 
@@ -16,12 +16,12 @@ def monitored_syscalls():
 
 
 def token_map():
-    raw = json.loads((ROOT / "data" / "syscall_map.json").read_text())
+    raw = json.loads((DETECTOR / "sources" / "data" / "syscall_map.json").read_text())
     return {ARCH_PREFIX.sub("", k): v for k, v in raw.items()}
 
 
 def model_tokens():
-    names = joblib.load(ROOT / "models" / "feature_names_syscall.pkl")
+    names = joblib.load(DETECTOR / "models" / "feature_names_syscall.pkl")
     return {int(t) for f in names for t in re.findall(r"\d+", str(f))}
 
 

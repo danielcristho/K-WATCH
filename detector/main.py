@@ -1,143 +1,103 @@
-"""K-Watch — Kubernetes Intrusion Detection System runtime detector."""
+"""K-Watch runtime detector: wire the sources, the pipeline and the sinks together."""
 
 import time
-from datetime import datetime, timezone
 
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-import config
-from log import console, logger
-from models import load_models
-from tailer import LogTailer
-from alerting import write_alert, resolve_severity, print_cycle_summary
-import tetragon
-import hubble
-
-
-def resolve_binary(sys_bin, net_bin):
-    if sys_bin is not None and net_bin is not None:
-        return int(sys_bin == 1 or net_bin == 1)
-    return sys_bin if sys_bin is not None else net_bin
+import alerting
+from alerting.console import ConsoleSink, print_cycle_summary
+from alerting.discord import DiscordSink
+from alerting.file import FileSink
+from core import config
+from core.log import console, logger
+from core.modelstore import load_models, total_files
+from core.pipeline import Detector
+from sources.hubble import HubbleSource
+from sources.tailer import LogTailer
+from sources.tetragon import TetragonSource
 
 
-def detect(models, tetragon_events, hubble_flows):
-    syscall_by_pod = tetragon.group_events(tetragon_events)
-    flow_by_pod    = hubble.group_flows(hubble_flows)
-    all_pods       = set(syscall_by_pod) | set(flow_by_pod)
-    ts             = datetime.now(timezone.utc).isoformat()
-    scenario_names = models["scenario_names"]
-    alerts         = []
-
+def load_with_progress():
     with Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]{task.description}"),
+        TextColumn("[bold cyan]{task.description}"),
         BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TextColumn("[green]{task.completed}/{task.total}"),
+        TimeElapsedColumn(),
         console=console,
-        transient=True,
     ) as progress:
-        task = progress.add_task("Analyzing pods...", total=len(all_pods))
+        task = progress.add_task("Loading models...", total=total_files())
 
-        for pod_name in all_pods:
-            progress.update(task, description=f"Analyzing [bold]{pod_name}[/bold]")
-            pod_sys  = syscall_by_pod.get(pod_name, {})
-            pod_flow = flow_by_pod.get(pod_name, {})
-
-            sys_syscalls = pod_sys.get("syscalls", [])
-            pod_flows = pod_flow.get("flows", [])
-
-            sys_bin, sys_scenario = (None, None)
-            if len(sys_syscalls) >= config.MIN_SYSCALL_THRESHOLD:
-                sys_bin, sys_scenario = tetragon.infer(models, sys_syscalls)
-
-            net_bin, net_scenario = (None, None)
-            if len(pod_flows) >= config.MIN_FLOW_THRESHOLD:
-                net_bin, net_scenario = hubble.infer(models, pod_flows)
-
-            binary_pred = resolve_binary(sys_bin, net_bin)
+        def report(filename):
+            progress.update(task, description=f"Loading [cyan]{filename}[/cyan]")
             progress.advance(task)
 
-            if binary_pred is None:
-                continue
+        return load_models(on_file=report)
 
-            namespace = pod_sys.get("namespace") or pod_flow.get("namespace", "")
-            if not namespace:
-                continue
-            if namespace in config.EXCLUDED_NAMESPACES:
-                continue
-            if config.MONITORED_NAMESPACES and namespace not in config.MONITORED_NAMESPACES:
-                continue
 
-            # Report the scenario from the source that flagged it, not always syscall
-            if sys_bin == 1:
-                scenario_pred = sys_scenario
-            elif net_bin == 1:
-                scenario_pred = net_scenario
-            else:
-                scenario_pred = sys_scenario if sys_scenario is not None else net_scenario
-            scenario_name = scenario_names[scenario_pred] if scenario_pred is not None and scenario_pred < len(scenario_names) else "unknown"
-            node = pod_sys.get("node") or pod_flow.get("node") or config.NODE_NAME
-
-            alert = {
-                "timestamp":           ts,
-                "source":              "k-watch",
-                "node":                node,
-                "namespace":           namespace,
-                "pod_name":            pod_name,
-                "binary_label":        binary_pred,
-                "binary_result":       "malicious" if binary_pred == 1 else "benign",
-                "scenario_label":      scenario_pred,
-                "scenario_result":     scenario_name,
-                "syscall_binary_pred": sys_bin,
-                "network_binary_pred": net_bin,
-                "syscall_count":       len(sys_syscalls),
-                "flow_count":          len(pod_flows),
-                "severity":            resolve_severity(binary_pred, sys_bin, net_bin),
-            }
-
-            if binary_pred == 1:
-                write_alert(alert)
-                alerts.append(alert)
-
-    return alerts
+def build():
+    """Everything that knows a concrete class lives here, and nowhere else."""
+    bundles, scenario_names = load_with_progress()
+    sources = [
+        TetragonSource(bundles["syscall"]),
+        HubbleSource(bundles["network"]),
+    ]
+    tailers = {
+        "syscall": LogTailer(config.TETRAGON_LOG),
+        "network": LogTailer(config.HUBBLE_LOG),
+    }
+    sinks = [
+        FileSink(config.ALERT_LOG),
+        DiscordSink(config.DISCORD_WEBHOOK),
+        ConsoleSink(),
+    ]
+    return Detector(sources, scenario_names), tailers, sinks
 
 
 def main():
-    console.print(Panel.fit(
-        "[bold cyan]K-Watch[/bold cyan] — Detector Pipeline",
-        border_style="cyan",
-    ))
-
+    console.print(Panel.fit("[bold cyan]K-Watch[/bold cyan] — Detector Pipeline", border_style="cyan"))
     logger.info(f"Tetragon : [orange3]{config.TETRAGON_LOG}[/orange3]")
     logger.info(f"Hubble   : [orange3]{config.HUBBLE_LOG}[/orange3]")
     logger.info(f"Models   : [orange3]{config.MODEL_DIR}[/orange3]")
     logger.info(f"Alerts   : [orange3]{config.ALERT_LOG}[/orange3]")
     logger.info(f"Interval : [bold]{config.POLL_INTERVAL}s[/bold]")
 
-    models = load_models()
+    detector, tailers, sinks = build()
     logger.success("All models loaded successfully")
-
-    tetragon_tailer = LogTailer(config.TETRAGON_LOG)
-    hubble_tailer   = LogTailer(config.HUBBLE_LOG)
-
     logger.info("[bold green]Watching for new events...[/bold green]")
 
     while True:
         time.sleep(config.POLL_INTERVAL)
-        tetragon_events = tetragon_tailer.read_new()
-        hubble_flows    = hubble_tailer.read_new()
-
-        if not tetragon_events and not hubble_flows:
+        batches = {name: tailer.read_new() for name, tailer in tailers.items()}
+        if not any(batches.values()):
             logger.info("No new events in this cycle")
             continue
 
         logger.info(
-            f"Processing [bold]{len(tetragon_events)}[/bold] syscall events, "
-            f"[bold]{len(hubble_flows)}[/bold] flows"
+            f"Processing [bold]{len(batches['syscall'])}[/bold] syscall events, "
+            f"[bold]{len(batches['network'])}[/bold] flows"
         )
-        alerts = detect(models, tetragon_events, hubble_flows)
-        print_cycle_summary(alerts, len(tetragon_events), len(hubble_flows))
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Analyzing pods...", total=None)
+            alerts = detector.run(
+                batches,
+                on_pod=lambda pod: progress.update(task, description=f"Analyzing [bold]{pod}[/bold]"),
+            )
+
+        for alert in alerts:
+            alerting.dispatch(alert, sinks)
+        print_cycle_summary(alerts, {
+            "Syscall events": len(batches["syscall"]),
+            "Flow events":    len(batches["network"]),
+        })
 
 
 if __name__ == "__main__":
