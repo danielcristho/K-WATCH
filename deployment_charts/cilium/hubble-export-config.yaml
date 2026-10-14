@@ -9,14 +9,14 @@ data:
     - name: all
       filePath: /var/run/cilium/hubble/events.log
       fileMaxSizeMb: 10
-      fileMaxBackups: 5
+      fileMaxBackups: 2
       includeFilters: []
       excludeFilters: []
       fieldMask: []
     - name: kwatch-workloads
       filePath: /var/run/cilium/hubble/kwatch-workloads.log
-      fileMaxSizeMb: 200
-      fileMaxBackups: 10
+      fileMaxSizeMb: 10
+      fileMaxBackups: 3
       includeFilters:
       - source_label:
         - "k8s:io.kubernetes.pod.namespace=default"

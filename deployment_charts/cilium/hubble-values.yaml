@@ -30,7 +30,7 @@ hubble:
       enabled: true
       filePath: /var/run/cilium/hubble/events.log
       fileMaxSizeMb: 10
-      fileMaxBackups: 5
+      fileMaxBackups: 2
     dynamic:
       enabled: true
       config:

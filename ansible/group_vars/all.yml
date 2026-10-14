@@ -6,6 +6,7 @@ kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
 # Kubernetes
 k8s_distro: kubeadm # kubeadm or k3s
 k3s_version: ""
-tetragon_export_max_size_mb: 500 # Log ratation
+tetragon_export_max_size_mb: 50 # /run is a tmpfs: 492MB on the worker but only 197MB on the master
+tetragon_export_max_backups: 1
 k8s_pod_cidr: "10.42.0.0/16"
 k8s_service_cidr: "10.43.0.0/16"
