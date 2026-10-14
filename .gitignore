@@ -231,3 +231,6 @@ training/models/
 
 # TLS keys and certs, regenerate with deployment_charts/wazuh/certs/generate_certs.sh
 *.pem
+
+# Personal Claude Code permissions, contains internal host addresses
+.claude/settings.local.json
