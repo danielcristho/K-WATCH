@@ -1,3 +1,5 @@
+"""Logging configuration for the detector. Uses loguru and rich."""
+
 from loguru import logger
 from rich.console import Console
 from rich.logging import RichHandler

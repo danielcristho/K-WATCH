@@ -1,3 +1,5 @@
+"""Read new JSON lines from a log file, surviving log rotation by rename."""
+
 import json
 from pathlib import Path
 

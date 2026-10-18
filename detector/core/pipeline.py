@@ -6,11 +6,7 @@ from core import config
 
 
 class Detector:
-    """Runs every source over every pod and merges their verdicts into alerts.
-
-    Source order is precedence order: the first source that calls a pod malicious
-    names the scenario.
-    """
+    """Runs every source over every pod and merges their verdicts into alerts."""
 
     def __init__(self, sources, scenario_names, node_name=None,
                  monitored=None, excluded=None):
@@ -31,8 +27,6 @@ class Detector:
             if on_pod:
                 on_pod(pod)
             alert = self._assess(pod, grouped, now)
-            # Benign verdicts are computed but not emitted, which is why Wazuh rule
-            # 100101 can never fire. Behaviour kept as-is on purpose.
             if alert and alert["binary_label"] == 1:
                 alerts.append(alert)
         return alerts
@@ -82,7 +76,7 @@ class Detector:
         return verdicts
 
     def _choose(self, verdicts):
-        """The first source that cried malicious wins; otherwise the first that spoke."""
+        """Return the first malicious verdict, or the first available verdict, or None."""
         for source in self.sources:
             verdict = verdicts.get(source.name)
             if verdict is not None and verdict.binary == 1:
@@ -108,7 +102,6 @@ class Detector:
     def _severity(binary, verdicts):
         if binary == 0:
             return "info"
-        # Two independent sources agreeing is the strongest signal the system has
         return "critical" if sum(v.binary == 1 for v in verdicts.values()) >= 2 else "high"
 
     @staticmethod

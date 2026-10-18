@@ -1,8 +1,4 @@
-"""The alert JSON is a contract with Wazuh, so its field names are pinned here.
-
-Wazuh matches on <field name="..."> and interpolates $(...) from the same JSON, so
-renaming a key in the pipeline silently stops rules 100100-100114 from firing.
-"""
+"""The alert JSON is a contract with Wazuh, so its field names are pinned here."""
 
 import re
 from pathlib import Path

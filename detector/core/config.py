@@ -1,3 +1,5 @@
+"""Configuration for the detector. Reads from .env and sets defaults."""
+
 import os
 import warnings
 from pathlib import Path

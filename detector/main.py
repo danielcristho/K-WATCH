@@ -44,7 +44,6 @@ def build():
         "syscall": LogTailer(config.TETRAGON_LOG),
         "network": LogTailer(config.HUBBLE_LOG),
     }
-    # The cycle panel is the console output; a per-alert line would only repeat it
     sinks = [FileSink(config.ALERT_LOG), DiscordSink(config.DISCORD_WEBHOOK)]
     return Detector(sources, scenario_names), tailers, sinks
 

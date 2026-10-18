@@ -84,8 +84,6 @@ class TetragonSource(ModelBackedSource):
         X = extract_features(records, self.bundle.features)
         if X is None:
             return None
-        # The n-gram vector is sparse, so a tree can score it without seeing evidence.
-        # Abstain instead of trusting the default leaf.
         if not X[0, decisive_features(self.bundle.scenario)].any():
             return None
         scenario = self.scenario_of(X)

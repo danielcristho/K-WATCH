@@ -1,4 +1,4 @@
-"""Load one model bundle per telemetry source."""
+"""Model storage and loading."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -42,10 +42,9 @@ def _load(filename: str, required: bool):
 
 
 def load_models(on_file=None):
-    """Return (bundles by source name, scenario class names).
-
-    on_file is called with each filename before it loads, for progress reporting.
-    """
+    """Load all models from disk, returning a dict of ModelBundle and the scenario names."""
+    if not MODEL_DIR.exists():
+        raise FileNotFoundError(f"Model directory not found: {MODEL_DIR}")
     bundles = {}
     for source, roles in BUNDLES.items():
         loaded = {}
