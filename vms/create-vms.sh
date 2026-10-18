@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-BASE_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+# Consts
+BASE_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img" # Use Ubuntu 24.04 LTS (Noble) cloud image
 POOL=/var/lib/libvirt/images
 BASE="$POOL/noble-base.img"
 NET=default
@@ -10,8 +11,8 @@ SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519.pub}"
 
 # name            cpu  mem(MiB)  disk  ip               mac
 VMS=(
-  "k3s-master      2    2560      20G   192.168.122.11   52:54:00:4b:a7:01"
-  "k3s-worker-1    2    2560      20G   192.168.122.12   52:54:00:4b:a7:02"
+  "k3s-master      4    3072      20G   192.168.122.11   52:54:00:4b:a7:01"
+  "k3s-worker-1    8    4096      20G   192.168.122.12   52:54:00:4b:a7:02"
   "k3s-siem        2    4096      30G   192.168.122.13   52:54:00:4b:a7:03"
 )
 
