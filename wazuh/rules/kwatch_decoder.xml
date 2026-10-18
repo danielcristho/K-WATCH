@@ -1,7 +1,3 @@
-<!-- Wazuh's built-in "json" decoder already parses these events, because the agent
-     reads the file with <log_format>json</log_format>. This decoder is the fallback
-     for any other log_format, so its prematch must match the real serialisation:
-     json.dumps writes ": " with a space, and "source" is not the first key. -->
 <decoder name="kwatch">
   <prematch>"source": "k-watch"</prematch>
 </decoder>
