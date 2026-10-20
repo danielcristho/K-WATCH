@@ -1,0 +1,10 @@
+# Tetragon belongs only where the monitored workloads run.
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+# A blanket "operator: Exists" is what put it on every node.
+tolerations:
+  - key: role
+    operator: Equal
+    value: worker
+    effect: NoSchedule

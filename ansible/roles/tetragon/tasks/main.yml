@@ -5,10 +5,17 @@
     helm repo update
   changed_when: true
 
+- name: Copy Tetragon values to Master
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../deployment_charts/tetragon/values.yaml"
+    dest: /tmp/tetragon-values.yaml
+    mode: '0644'
+
 - name: Install Tetragon
   ansible.builtin.shell: |
     helm upgrade --install tetragon cilium/tetragon \
       --namespace kube-system \
+      -f /tmp/tetragon-values.yaml \
       --set tetragon.exportFileMaxSizeMB={{ tetragon_export_max_size_mb }} \
       --set tetragon.exportFileMaxBackups={{ tetragon_export_max_backups }}
   environment:
