@@ -11,11 +11,6 @@
 
 </div>
 
-> **Presented at KCD Indonesia, 24 October 2026**
->
-> *eBPF at the Edge: Runtime Security for K3s.* What the detector sees from the kernel,
-> and where it fails.
-
 K-Watch is a runtime intrusion detection system for Kubernetes built on eBPF and
 Decision Tree classifiers. It reads two independent streams of kernel telemetry,
 syscall events from [Tetragon](https://tetragon.io) and network flows from
@@ -67,8 +62,8 @@ switch is `k8s_distro` in `ansible/group_vars/all.yml`.
 | Inventory      | `terraform/generate-inventory.sh` writes it    | `ansible/hosts`, written by hand |
 | Distro install | `ansible/roles/master`, `ansible/roles/worker` | `ansible/roles/k3s`              |
 
-The evaluation reported in the paper was collected on the kubeadm layout. The k3s
-layout exists to check that the same detector works on nodes sized for the workload
+The syscall and network datasets were collected on the kubeadm layout. The k3s layout
+exists to check that the same detector works on nodes sized for the workload
 rather than for the tooling. On k3s the playbook disables flannel, kube-proxy, traefik
 and servicelb, because Cilium replaces them.
 
