@@ -1,7 +1,7 @@
 # K-Watch - Just Recipes
 # Run tasks with: just <task-name>
 
-export KUBECONFIG := "ansible/kubeconfig"
+export KUBECONFIG := env_var_or_default("KUBECONFIG", justfile_directory() / "ansible/kubeconfig")
 
 # Display all available commands
 default:
@@ -9,7 +9,7 @@ default:
 
 #! Infrastructure
 
-# Provison configuration (k8s setup, cillium, tetragon deployment) 
+# Provison configuration (k8s setup, cillium, tetragon deployment)
 ansible:
     cd ansible && ansible-playbook -i hosts playbook.yml
 
@@ -186,7 +186,7 @@ deploy-all:
     @echo "All deployments complete"
     kubectl get pods -A
 
-#! Detector chart 
+#! Detector chart
 
 # Deploy detector
 detector-deploy:
@@ -214,3 +214,26 @@ clean-all:
     just malicious-clean
     just detector-clean
     @echo "=== All charts removed ==="
+
+
+### DEMO
+# Open the SSH tunnel to the staging cluster (port 6444)
+tunnel:
+    #!/usr/bin/env bash
+    ss -tln | grep -q ':6444 ' && echo "tunnel already up on :6444" || ssh -fN kwatch-stg
+    echo 'now run in your shell:  export KUBECONFIG=~/.kube/k-watch-stg.yaml'
+
+tetra-mal:
+    kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon -o wide
+
+# Summarise what a pod exec'd and which syscalls it hit, from the Tetragon export log
+tetra-events pod lines="80000":
+    #!/usr/bin/env bash
+    set -eu
+    read -r node name < <(kubectl get pod -A -o custom-columns=NODE:.spec.nodeName,N:.metadata.name --no-headers | grep -m1 -- "{{pod}}" | awk '{print $1, $2}')
+    [ -n "${node:-}" ] || { echo "no pod matching {{pod}}"; exit 1; }
+    tp=$(kubectl -n kube-system get pod -l app.kubernetes.io/name=tetragon --field-selector spec.nodeName="$node" -o jsonpath='{.items[0].metadata.name}')
+    echo "pod $name on $node, reading via $tp"
+    # kubectl exec writes a harmless stream-close error to stderr when tail ends, drop it
+    kubectl -n kube-system exec "$tp" -c export-stdout -- tail -n {{lines}} /var/run/cilium/tetragon/tetragon.log 2>/dev/null \
+      | python3 {{justfile_directory()}}/scripts/tetra_summary.py "$name"
