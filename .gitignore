@@ -234,3 +234,6 @@ training/models/
 
 # Personal Claude Code permissions, contains internal host addresses
 .claude/settings.local.json
+
+# Personal, laptop-specific demo recipes (SSH aliases, kubeconfig paths)
+demo.local.just

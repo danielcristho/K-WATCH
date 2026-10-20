@@ -3,6 +3,9 @@
 
 export KUBECONFIG := env_var_or_default("KUBECONFIG", justfile_directory() / "ansible/kubeconfig")
 
+# Personal, laptop-specific recipes (gitignored); absent on a fresh clone
+import? 'demo.local.just'
+
 # Display all available commands
 default:
     @just --list
@@ -46,14 +49,6 @@ malicious-clean:
     helm uninstall malicious -n malicious || true
     kubectl delete namespace malicious --ignore-not-found
 
-# Deploy Compromise containers
-compromise-deploy:
-    kubectl apply -f deployment_charts/compromised-pods/compromised_chart.yml
-
-# Port-forward Hubble Relay & Hubble UI
-forward-svc:
-    kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
-    kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
 
 # Deploy tetragon policy & bpf-library
@@ -216,12 +211,16 @@ clean-all:
     @echo "=== All charts removed ==="
 
 
-### DEMO
-# Open the SSH tunnel to the staging cluster (port 6444)
-tunnel:
-    #!/usr/bin/env bash
-    ss -tln | grep -q ':6444 ' && echo "tunnel already up on :6444" || ssh -fN kwatch-stg
-    echo 'now run in your shell:  export KUBECONFIG=~/.kube/k-watch-stg.yaml'
+## DEMO
+
+# Deploy the compromised default-namespace pods (app-server + trojan-agent)
+compromise-deploy:
+    kubectl apply -f deployment_charts/compromised-pods/compromised_chart.yml
+
+# Port-forward Hubble Relay and Hubble UI
+forward-svc:
+    kubectl -n kube-system port-forward service/hubble-relay 4245:80 --address 0.0.0.0 &
+    kubectl -n kube-system port-forward service/hubble-ui 12000:80 --address 0.0.0.0 &
 
 tetra-mal:
     kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon -o wide
