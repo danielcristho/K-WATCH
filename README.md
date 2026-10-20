@@ -2,6 +2,8 @@
 
 # K-WATCH
 
+**K**ubernetes **W**orkload **A**nalysis **T**hrough **C**ontainer **H**ooks
+
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Detector image](https://img.shields.io/docker/image-size/danielcristh0/kwatch_detector/latest?label=detector%20image)](https://hub.docker.com/r/danielcristh0/kwatch_detector)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](pyproject.toml)
