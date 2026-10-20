@@ -1,6 +1,7 @@
 #!/bin/bash
 # K-Watch: Complete Infrastructure Setup
 # Provisions EC2 instances and installs Kubernetes (kubeadm) using Ansible.
+# The k3s layout is set up by hand, see README.md.
 
 set -e
 
@@ -20,6 +21,21 @@ log_info()  { echo -e "${GREEN}[✓]${NC} $*"; }
 log_warn()  { echo -e "${YELLOW}[!]${NC} $*"; }
 log_error() { echo -e "${RED}[✗]${NC} $*"; }
 log_step()  { echo -e "${CYAN}[→]${NC} ${BOLD}$*${NC}"; }
+
+case "$K8S_DISTRO" in
+    kubeadm) ;;
+    k3s)
+        log_error "This script only provisions the AWS EC2 layout."
+        echo -e "  Steps 1-4 call Terraform and read its outputs, which the k3s layout does not have."
+        echo -e "  For k3s, follow the step by step setup in ${BOLD}README.md${NC}:"
+        echo -e "    ${YELLOW}./vms/create-vms.sh${NC}                      # create the libvirt VMs"
+        echo -e "    ${YELLOW}cp ansible/hosts.example ansible/hosts${NC}   # then fill in the pinned IPs"
+        echo -e "    ${YELLOW}just ansible${NC}                             # with k8s_distro: k3s set"
+        echo -e "    ${YELLOW}just deploy-all${NC}"
+        exit 1
+        ;;
+    *) log_error "K8S_DISTRO must be kubeadm or k3s (got: $K8S_DISTRO)"; exit 1 ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SSH_KEY_FILE="${SSH_KEY_FILE:-}"
@@ -45,11 +61,6 @@ if [ -z "$SSH_KEY_FILE" ] || [ ! -f "$SSH_KEY_FILE" ]; then
     echo -e "  ${YELLOW}SSH_KEY_FILE=/path/to/your-key.pem ./setup-all.sh${NC}"
     exit 1
 fi
-
-case "$K8S_DISTRO" in
-    kubeadm|k3s) ;;
-    *) log_error "K8S_DISTRO must be kubeadm or k3s (got: $K8S_DISTRO)"; exit 1 ;;
-esac
 
 # Architecture lives in terraform.tfvars so it survives a bare 'terraform apply'
 ARCHITECTURE=$(sed -n 's/^[[:space:]]*architecture[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' \
