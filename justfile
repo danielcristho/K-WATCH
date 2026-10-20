@@ -48,7 +48,7 @@ malicious-clean:
 
 # Deploy Compromise containers
 compromise-deploy:
-    kubectl apply -f deployment_charts/compromised-pods/compromised-deployments.yaml
+    kubectl apply -f deployment_charts/compromised-pods/compromised_chart.yml
 
 # Port-forward Hubble Relay & Hubble UI
 forward-svc:
