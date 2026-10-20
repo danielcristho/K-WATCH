@@ -44,7 +44,6 @@ class ModelBackedSource:
     def scenario_of(self, X) -> int:
         return int(self.bundle.scenario.predict(X)[0])
 
-    def binary_of(self, scenario: int, X=None) -> int:
-        if self.bundle.binary is not None and X is not None:
-            return int(self.bundle.binary.predict(X)[0])
+    def binary_of(self, scenario: int) -> int:
+        # No binary head is trained, so the scenario class decides.
         return 0 if scenario in BENIGN_LABELS else 1

@@ -87,7 +87,7 @@ class TetragonSource(ModelBackedSource):
         if not X[0, decisive_features(self.bundle.scenario)].any():
             return None
         scenario = self.scenario_of(X)
-        return Verdict(self.binary_of(scenario, X), scenario)
+        return Verdict(self.binary_of(scenario), scenario)
 
 
 if __name__ == "__main__":
