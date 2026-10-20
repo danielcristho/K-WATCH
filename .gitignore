@@ -233,4 +233,4 @@ training/models/
 *.pem
 
 # Personal Claude Code permissions, contains internal host addresses
-.claude/settings.local.json
+.claude/
