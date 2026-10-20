@@ -182,7 +182,7 @@ wazuh-health:
 deploy-all:
     just wazuh-deploy
     just benign-deploy
-    just malicious
+    just malicious-deploy
     @echo "All deployments complete"
     kubectl get pods -A
 
