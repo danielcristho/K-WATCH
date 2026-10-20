@@ -155,7 +155,7 @@ wazuh-clean:
 # Port-forward Wazuh Dashboard (access at https://localhost:5601)
 wazuh-dashboard:
     @echo "Wazuh Dashboard available at https://localhost:5601"
-    @echo "Login: admin / CHANGE_ME_INDEXER_PASSWORD"
+    @echo "Login: admin / the indexerAdmin password in deployment_charts/wazuh/values.yaml"
     kubectl -n wazuh port-forward svc/wazuh-dashboard 5601:443 --address 0.0.0.0
 
 # Initialize Wazuh Indexer security (run once after fresh deploy)

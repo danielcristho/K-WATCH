@@ -81,11 +81,11 @@ agent:
   # Run on all nodes
   affinity: {}
 
-# Credentials
+# Credentials, set these before deploying; never commit real values
 credentials:
   indexerAdmin:
     username: admin
     password: CHANGE_ME_INDEXER_PASSWORD
   apiUser:
     username: wazuh-wui
-    password: CHANGE_ME_API_PASSWORD # Don't use this in production:)
+    password: CHANGE_ME_API_PASSWORD
