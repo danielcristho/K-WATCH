@@ -4,9 +4,12 @@ set -euo pipefail
 
 # Consts
 BASE_URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img" # Use Ubuntu 24.04 LTS (Noble) cloud image
-POOL=/var/lib/libvirt/images
+POOL="${POOL:-/var/lib/libvirt/images}"
 BASE="$POOL/noble-base.img"
 NET=default
+VIRSH="virsh -c qemu:///system"
+SUDO=sudo
+if [ -w "$POOL" ]; then SUDO=""; fi   # a user-writable pool needs no root
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519.pub}"
 
 # name            cpu  mem(MiB)  disk  ip               mac
@@ -21,13 +24,13 @@ PUBKEY=$(cat "$SSH_KEY")
 
 if [ ! -f "$BASE" ]; then
     echo "==> Downloading Ubuntu 24.04 cloud image"
-    sudo curl -fL --progress-bar -o "$BASE" "$BASE_URL"
+    $SUDO curl -fL --progress-bar -o "$BASE" "$BASE_URL"
 fi
 
 for spec in "${VMS[@]}"; do
     read -r NAME CPU MEM DISK IP MAC <<< "$spec"
 
-    if virsh dominfo "$NAME" &>/dev/null; then
+    if $VIRSH dominfo "$NAME" &>/dev/null; then
         echo "==> $NAME already exists, skipping"
         continue
     fi
@@ -35,11 +38,11 @@ for spec in "${VMS[@]}"; do
     echo "==> Creating $NAME  ($CPU vCPU, ${MEM}MiB, $DISK, $IP)"
 
     # Pin the IP so the Ansible inventory stays valid across reboots
-    virsh net-update "$NET" add ip-dhcp-host \
+    $VIRSH net-update "$NET" add ip-dhcp-host \
         "<host mac='$MAC' name='$NAME' ip='$IP'/>" --live --config 2>/dev/null || true
 
-    sudo cp "$BASE" "$POOL/$NAME.qcow2"
-    sudo qemu-img resize "$POOL/$NAME.qcow2" "$DISK"
+    $SUDO cp "$BASE" "$POOL/$NAME.qcow2"
+    $SUDO qemu-img resize "$POOL/$NAME.qcow2" "$DISK"
 
     WORK=$(mktemp -d)
     cat > "$WORK/user-data" <<EOF
@@ -56,10 +59,10 @@ ssh_pwauth: false
 EOF
     echo "instance-id: $NAME" > "$WORK/meta-data"
     cloud-localds "$WORK/seed.iso" "$WORK/user-data" "$WORK/meta-data"
-    sudo mv "$WORK/seed.iso" "$POOL/$NAME-seed.iso"
+    $SUDO mv "$WORK/seed.iso" "$POOL/$NAME-seed.iso"
     rm -rf "$WORK"
 
-    sudo virt-install \
+    $SUDO virt-install --connect qemu:///system \
         --name "$NAME" \
         --memory "$MEM" --vcpus "$CPU" \
         --disk "path=$POOL/$NAME.qcow2,format=qcow2,bus=virtio" \
