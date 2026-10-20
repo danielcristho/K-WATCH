@@ -72,9 +72,17 @@ def test_no_rule_interpolates_a_namespaced_field():
     assert not dotted, f"these resolve to an empty string at runtime: {sorted(set(dotted))}"
 
 
+def test_the_parent_group_list_ends_with_a_comma():
+    # Wazuh concatenates the parent list with each rule's own, so "kubernetes" + "kwatch"
+    # silently became one group named "kuberneteskwatch" and no dashboard filter matched it.
+    parent = re.search(r'<group name="([^"]+)"', RULES.read_text()).group(1)
+    assert parent.endswith(","), f'<group name="{parent}"> must end with a comma'
+
+
 if __name__ == "__main__":
     test_alert_has_exactly_the_agreed_fields()
     test_source_names_drive_the_prediction_fields()
     test_every_field_wazuh_reads_is_emitted()
     test_no_rule_interpolates_a_namespaced_field()
+    test_the_parent_group_list_ends_with_a_comma()
     print(f"ok: {len(EXPECTED_FIELDS)} alert fields pinned, Wazuh rules all satisfied")
