@@ -236,3 +236,14 @@ tetra-events pod lines="80000":
     # kubectl exec writes a harmless stream-close error to stderr when tail ends, drop it
     kubectl -n kube-system exec "$tp" -c export-stdout -- tail -n {{lines}} /var/run/cilium/tetragon/tetragon.log 2>/dev/null \
       | python3 {{justfile_directory()}}/scripts/tetra_summary.py "$name"
+
+# Summarise a pod's network flows (destinations, ports, verdict) from the Hubble export log
+hubble-events pod lines="60000":
+    #!/usr/bin/env bash
+    set -eu
+    read -r node name < <(kubectl get pod -A -o custom-columns=NODE:.spec.nodeName,N:.metadata.name --no-headers | grep -m1 -- "{{pod}}" | awk '{print $1, $2}')
+    [ -n "${node:-}" ] || { echo "no pod matching {{pod}}"; exit 1; }
+    cp=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName="$node" -o jsonpath='{.items[0].metadata.name}')
+    echo "pod $name on $node, reading via $cp"
+    kubectl -n kube-system exec "$cp" -c cilium-agent -- tail -n {{lines}} /var/run/cilium/hubble/kwatch-workloads.log 2>/dev/null \
+      | python3 {{justfile_directory()}}/scripts/hubble_summary.py "$name"
