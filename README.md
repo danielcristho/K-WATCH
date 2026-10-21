@@ -4,7 +4,7 @@
 
 **K**ubernetes **W**orkload **A**nalysis **T**hrough **C**ontainer **H**ooks
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Detector image](https://img.shields.io/docker/image-size/danielcristh0/kwatch_detector/latest?label=detector%20image)](https://hub.docker.com/r/danielcristh0/kwatch_detector)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](pyproject.toml)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-1.32%2B-326ce5.svg)](https://kubernetes.io)
@@ -13,10 +13,10 @@
 
 </div>
 
-K-Watch is a runtime intrusion detection system for Kubernetes built on eBPF and
+K-WATCH is a runtime intrusion detection system for Kubernetes built on eBPF and
 Decision Tree classifiers. It reads two independent streams of kernel telemetry,
 syscall events from [Tetragon](https://tetragon.io) and network flows from
-[Hubble](https://cilium.io), turns each into per-pod feature vectors, and raises an
+[Hubble](https://docs.cilium.io/en/stable/overview/intro), turns each into per-pod feature vectors, and raises an
 alert when a pod's behaviour matches a known attack class.
 
 The two streams are classified separately, then merged, so each alert records which
