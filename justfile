@@ -3,7 +3,7 @@
 
 export KUBECONFIG := env_var_or_default("KUBECONFIG", justfile_directory() / "ansible/kubeconfig")
 
-# Personal, laptop-specific recipes (gitignored); absent on a fresh clone
+# Personal recipes
 import? 'demo.local.just'
 
 # Display all available commands
@@ -72,9 +72,6 @@ benign-clean:
     helm uninstall benign -n benign-workloads || true
     kubectl delete namespace benign-workloads --ignore-not-found
 
-#! Hubble & Tetragon data collection
-
-
 #! Wazuh stack
 
 # Prepare wazuh dedicated node (run after node joins cluster)
@@ -131,7 +128,7 @@ wazuh-deploy:
     @echo "Wazuh deployed. Waiting for pods..."
     kubectl -n wazuh get pods -w
 
-# K-Watch decoder and rules as a ConfigMap, mounted into the manager so they survive restarts
+# K-Watch decoder and rules as a ConfigMap
 wazuh-rules:
     kubectl create namespace wazuh --dry-run=client -o yaml | kubectl apply -f -
     kubectl -n wazuh create configmap wazuh-kwatch-rules \
@@ -156,7 +153,7 @@ wazuh-clean:
     kubectl delete namespace wazuh --ignore-not-found
     @echo "Wazuh uninstalled"
 
-# Port-forward Wazuh Dashboard (access at https://localhost:5601)
+# Port-forward Wazuh Dashboard
 wazuh-dashboard:
     @echo "Wazuh Dashboard available at https://localhost:5601"
     @echo "Login: admin / the indexerAdmin password in deployment_charts/wazuh/values.yaml"
@@ -182,7 +179,7 @@ wazuh-health:
     kubectl -n wazuh exec -it wazuh-indexer-0 -- \
         curl -sk -u admin:admin https://localhost:9200/_cluster/health?pretty
 
-# Deploy all (wazuh + benign + malicious)
+# Deploy all (wazuh, benign, malicious)
 deploy-all:
     just wazuh-deploy
     just benign-deploy
@@ -222,7 +219,6 @@ clean-all:
 
 ## DEMO
 
-# Deploy the compromised default-namespace pods (app-server + trojan-agent)
 compromise-deploy:
     kubectl apply -f deployment_charts/compromised-pods/compromised_chart.yml
 
@@ -234,7 +230,6 @@ forward-svc:
 tetra-mal:
     kubectl -n kube-system get pods -l app.kubernetes.io/name=tetragon -o wide
 
-# Summarise what a pod exec'd and which syscalls it hit, from the Tetragon export log
 tetra-events pod lines="80000":
     #!/usr/bin/env bash
     set -eu
@@ -242,11 +237,9 @@ tetra-events pod lines="80000":
     [ -n "${node:-}" ] || { echo "no pod matching {{pod}}"; exit 1; }
     tp=$(kubectl -n kube-system get pod -l app.kubernetes.io/name=tetragon --field-selector spec.nodeName="$node" -o jsonpath='{.items[0].metadata.name}')
     echo "pod $name on $node, reading via $tp"
-    # kubectl exec writes a harmless stream-close error to stderr when tail ends, drop it
     kubectl -n kube-system exec "$tp" -c export-stdout -- tail -n {{lines}} /var/run/cilium/tetragon/tetragon.log 2>/dev/null \
       | python3 {{justfile_directory()}}/scripts/tetra_summary.py "$name"
 
-# Summarise a pod's network flows (destinations, ports, verdict) from the Hubble export log
 hubble-events pod lines="60000":
     #!/usr/bin/env bash
     set -eu

@@ -15,8 +15,6 @@ with open(Path(__file__).parent / "data" / "ports.json") as _f:
 MINING_PORTS = set(_ports["mining"])
 DB_PORTS     = set(_ports["database"])
 HTTP_PORTS   = set(_ports["http"])
-
-# Training aggregated flows into fixed windows; inference has to use the same unit
 NETWORK_WINDOW_SIZE = 100
 
 

@@ -18,7 +18,6 @@ class LogTailer:
         if not self.path.exists():
             return []
         stat = self.path.stat()
-        # Detect log rotation: inode changed or file shrunk
         if stat.st_ino != self._inode or stat.st_size < self.offset:
             self._inode = stat.st_ino
             self.offset = 0

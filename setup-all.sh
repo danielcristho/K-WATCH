@@ -78,24 +78,20 @@ echo -e "${BLUE}║${NC}  Terraform + Ansible + Kubernetes            ${BLUE}║
 echo -e "${BLUE}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Step 1: Deploy infrastructure
 log_step "Step 1/6: Deploying AWS infrastructure..."
 cd "$SCRIPT_DIR/terraform"
 ./quick-start.sh
 
-# Step 2: Wait for instances to boot
 echo ""
 log_step "Step 2/6: Waiting for instances to fully boot (60s)..."
 sleep 60
 log_info "Boot wait complete"
 
-# Step 3: Generate Ansible inventory
 echo ""
 log_step "Step 3/6: Generating Ansible inventory..."
 ./generate-inventory.sh
 log_info "Inventory generated"
 
-# Step 4: Test SSH connectivity
 echo ""
 log_step "Step 4/6: Testing SSH connectivity..."
 cd ../ansible
@@ -125,7 +121,6 @@ ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$
 }
 log_info "Worker SSH OK"
 
-# Step 5: Run Ansible playbook
 echo ""
 log_step "Step 5/6: Installing Kubernetes ($K8S_DISTRO) with Ansible..."
 log_warn "This will take 10-15 minutes..."
@@ -135,7 +130,6 @@ ansible-playbook -i hosts playbook.yml -e "k8s_distro=$K8S_DISTRO"
 
 log_info "Kubernetes installed successfully"
 
-# Step 6: Get kubeconfig
 echo ""
 log_step "Step 6/6: Fetching kubeconfig..."
 scp -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no ubuntu@$MASTER_IP:/home/ubuntu/.kube/config ./kubeconfig > /dev/null 2>&1

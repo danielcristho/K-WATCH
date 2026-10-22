@@ -23,8 +23,6 @@ BANNER = r"""
 
 STYLES = {"critical": "bold white on red", "high": "bold red", "info": "green"}
 BORDERS = {"critical": "red", "high": "dark_orange", "info": "green"}
-
-#: A spinner redrawn over itself is noise once it lands in a log file
 INTERACTIVE = sys.stdout.isatty()
 
 
