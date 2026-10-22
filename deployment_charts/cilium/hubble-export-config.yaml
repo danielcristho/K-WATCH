@@ -22,10 +22,13 @@ data:
         - "k8s:io.kubernetes.pod.namespace=default"
         - "k8s:io.kubernetes.pod.namespace=malicious"
         - "k8s:io.kubernetes.pod.namespace=benign-workloads"
+        - "k8s:io.kubernetes.pod.namespace=production"
+
       - destination_label:
         - "k8s:io.kubernetes.pod.namespace=default"
         - "k8s:io.kubernetes.pod.namespace=malicious"
         - "k8s:io.kubernetes.pod.namespace=benign-workloads"
+        - "k8s:io.kubernetes.pod.namespace=production"
       excludeFilters: []
       fieldMask:
       - time
