@@ -55,10 +55,21 @@ spec:
             - name: manager-certs
               mountPath: /etc/ssl/certs/wazuh
               readOnly: true
+            - name: kwatch-rules
+              mountPath: /var/ossec/etc/decoders/kwatch_decoder.xml
+              subPath: kwatch_decoder.xml
+              readOnly: true
+            - name: kwatch-rules
+              mountPath: /var/ossec/etc/rules/kwatch_rules.xml
+              subPath: kwatch_rules.xml
+              readOnly: true
       volumes:
         - name: manager-certs
           secret:
             secretName: manager-certs
+        - name: kwatch-rules
+          configMap:
+            name: wazuh-kwatch-rules
   volumeClaimTemplates:
     - metadata:
         name: manager-data

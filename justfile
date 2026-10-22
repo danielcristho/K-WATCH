@@ -126,9 +126,18 @@ wazuh-deploy:
     just wazuh-storage
     just wazuh-certs
     just wazuh-secrets
+    just wazuh-rules
     helm upgrade --install wazuh ./deployment_charts/wazuh -n wazuh
     @echo "Wazuh deployed. Waiting for pods..."
     kubectl -n wazuh get pods -w
+
+# K-Watch decoder and rules as a ConfigMap, mounted into the manager so they survive restarts
+wazuh-rules:
+    kubectl create namespace wazuh --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n wazuh create configmap wazuh-kwatch-rules \
+        --from-file=kwatch_decoder.xml=wazuh/rules/kwatch_decoder.xml \
+        --from-file=kwatch_rules.xml=wazuh/rules/kwatch_rules.xml \
+        --dry-run=client -o yaml | kubectl apply -f -
 
 # Check Wazuh deployment status
 wazuh-status:
